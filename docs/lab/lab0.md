@@ -4,7 +4,7 @@ prev: false
 
 # Lab 0: Booting
 
-**实验周期：1 周。** 请在本地完成实验，具体提交日期以本学期 elearning 作业为准。
+**实验周期：1 周。** 请在本地完成实验，最晚提交日期：10月16日 23:59:59。
 
 本学期，我们将实现一个简单的操作系统内核。在 Lab 0 中，我们将配置好实验环境并完成 3 个实验任务。
 
@@ -46,17 +46,17 @@ prev: false
 
 适用于 Intel/AMD 的 x86-64 Windows 电脑。希望使用完整 Ubuntu 桌面的同学可以选择此方式，无需同时安装 WSL2。
 
-1. 按 [VMware 官方下载说明](https://knowledge.broadcom.com/external/article/368667/download-and-license-information-for-vmw.html)注册或登录 Broadcom 账户，下载适用于 Windows 的 Workstation Pro，运行安装程序。当前免费版本无需购买许可证。
+1. 按 [VMware 官方下载说明](https://knowledge.broadcom.com/external/article/368667/download-and-license-information-for-vmw.html)注册或登录 Broadcom 账户，下载适用于 Windows 的 Workstation Pro，运行安装程序。
 2. 从 [Ubuntu 24.04 LTS 官方镜像目录](https://releases.ubuntu.com/24.04/)下载文件名包含 `desktop-amd64.iso` 的桌面镜像；这里的 AMD64 同时适用于 Intel 和 AMD 的 x86-64 处理器。
 3. 在 Workstation 中新建虚拟机，选择下载的 ISO，操作系统选择 Ubuntu 64-bit。按本节开头的建议分配 CPU、内存和虚拟磁盘，网络选择 NAT。
 4. 启动虚拟机，按安装向导安装 Ubuntu、创建用户名和密码。安装器中的磁盘选项作用于新建的虚拟磁盘。完成后重启，按提示断开安装 ISO，进入已安装的 Ubuntu。
 5. 打开 Ubuntu 的终端，继续第 1.4 节。项目保存在虚拟机的 Linux 家目录中。
 
-图文操作可参考 [CSDN：VMware 安装 Ubuntu 24.04 桌面版](https://openeuler.csdn.net/6a154719662f9a54cb7724ab.html)。软件下载、镜像架构和资源配置以本页及官方说明为准。Linux 主机也可使用 Workstation 的 Linux 版本，安装方法见 [VMware 官方安装说明](https://knowledge.broadcom.com/external/article/344595/downloading-and-installing-vmware-workst.html)。
+图文操作可参考 [CSDN：VMware 安装 Ubuntu 24.04 桌面版](https://openeuler.csdn.net/6a154719662f9a54cb7724ab.html)。
 
 ### 1.3 macOS：VMware Fusion + Ubuntu
 
-macOS 用户在 **Ubuntu 虚拟机内**完成实验。先在苹果菜单的“关于本机”中确认芯片类型，再选择对应镜像：
+macOS 用户也需要在 **Ubuntu 虚拟机内**完成实验。确认芯片类型，再选择对应镜像：
 
 | Mac 类型 | Ubuntu 镜像 | 官方下载 |
 | --- | --- | --- |
@@ -110,7 +110,7 @@ cd OS-26Fall-FDU
 git switch -c lab0-dev
 ```
 
-`upstream` 是课程代码仓库在本地的名称；`lab0-dev` 是自己修改 Lab0 的分支。克隆和创建分支只需执行一次，无需创建个人 GitHub 仓库。再次开始实验时，进入已有目录即可：
+`upstream` 为课程代码仓库本地名称；`lab0-dev` 是自己修改 Lab0 的分支。再次开始实验时，进入已有目录即可：
 
 ```shell
 cd ~/os-course/OS-26Fall-FDU
@@ -195,7 +195,7 @@ cmake --build build --target qemu
 
 在 `build` 目录中执行 `make qemu` 后，构建系统将自动编译操作系统内核并启动 QEMU 运行内核。下面我们将介绍本实验操作系统内核的启动流程。
 
-### 入口：梦开始的地方
+### 入口：
 
 我们通过链接器脚本（请见第7节）指定内核的入口为 `_start` 函数（位于 `src/start.S`）。
 
@@ -291,27 +291,24 @@ printk("data is %p; edata is %p", (void*)data, (void*)edata);
 >
 > **任务 3**
 >
-> 按照惯例 BSS 段应当置零（为什么？请复习计算机系统基础或咨询助教）。然而，当操作系统内核被装载到内存中时，BSS 段对应的内存无法保证是置零状态（因为很多时候没有比操作系统更高一级的有关方面来负责“打扫”内存，此时操作系统内核本身就是内存的管理者）。因此，请在CPU 0 进行内核初始化前增加**清零 BSS 段**的逻辑。
+> 按照惯例 BSS 段应当置零（为什么？请尝试查询资料回答该问题）。然而，当操作系统内核被装载到内存中时，BSS 段对应的内存无法保证是置零状态（因为很多时候没有比操作系统更高一级的有关方面来负责“打扫”内存，此时操作系统内核本身就是内存的管理者）。因此，请在CPU 0 进行内核初始化前增加**清零 BSS 段**的逻辑。
 >
 > **提示 1**: 清零 BSS 段首先需要获取 BSS 段起始和终止的地址，上面已经演示了如何获取某段的起始和终止地址。
 >
 > **提示 2**: 查找 `memset` 函数，使用此函数清零一段连续的内存空间。
 
-## 参考资料
-
-1. Arpaci-Dusseau, R. H., & Arpaci-Dusseau, A. C. (2018). Operating systems: Three easy pieces.
 
 ## 8. 实验报告与提交
 
-每位同学必须在 elearning 对应作业中提交 **`学号-lab0.pdf` 实验报告**。具体提交日期和迟交安排以本学期 elearning 作业说明为准。沿用原安排，Lab0 报告不单独计分。
+每位同学必须在 elearning 对应作业中提交 **`学号-lab0.pdf` 实验报告**。
 
 报告必须包括：
 
 1. **实验环境**：操作系统、CPU 架构、编译器、CMake 和 QEMU 版本，以及实际使用的运行环境（原生 Ubuntu、WSL2 或虚拟机）。
 2. **实验思路**：分别说明任务 1、2、3 的实现思路，以及 CPU 0 初始化、放行其他核心和清零 BSS 的顺序。
-3. **实现方式**：列出修改过的文件、关键函数和使用的链接器符号，解释 BSS 地址范围及清零原因。可以用少量关键代码或流程图，不需要粘贴大段代码。
+3. **实现方式**：列出修改过的文件、关键函数和使用的链接器符号，解释 BSS 地址范围及清零原因。
 4. **实验结果与测试**：给出构建和运行命令、四个核心的实际输出与截图/日志，说明为什么后三个核心的输出顺序可以不同；如有失败，记录现象、定位过程和修复结果。
-5. **问题回答与总结**：回答本页任务和提示中的问题，说明遇到的困难、解决方法和仍存在的问题。
+5. **问题回答与总结**：回答本页任务和提示中的问题，可说明遇到的困难、解决方法和仍存在的问题。
 6. **大模型工具使用情况**：如使用大模型辅助理解、编写或调试，请注明工具名称、模型名称/版本（以工具可见信息为准）及使用环节，并简要记录以下内容：
    - **提示词与模型输出**：摘录能反映关键问题的提示词及模型输出，或对较长输出作准确摘要。
    - **提示词迭代**：说明如何根据输出补充代码背景、报错信息或约束，以及调整提示词后的变化；若未迭代，注明即可。
@@ -321,3 +318,7 @@ printk("data is %p; edata is %p", (void*)data, (void*)edata);
    按关键步骤简要记录即可，不要求提交完整聊天记录或大段模型生成代码。可采用“问题/目的 → 提示词与输出摘要 → 提示词调整 → 采纳或舍弃及依据 → 调试修改与结果”的形式。**未使用大模型工具的同学，请明确写明“本次实验未使用大模型工具”**；使用了工具但某项没有发生时，也请如实注明，无需补造记录。报告中应清楚区分模型建议与本人最终实现，并解释最终采用方案的原理。
 
 报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。
+
+## 参考资料
+
+1. Arpaci-Dusseau, R. H., & Arpaci-Dusseau, A. C. (2018). Operating systems: Three easy pieces.

@@ -4,131 +4,58 @@ prev: false
 
 # Lab 0: Booting
 
-负责助教：唐傑伟 徐厚泽
+**实验周期：1 周。** 请在本地完成实验，具体提交日期以本学期 elearning 作业为准。
 
 本学期，我们将实现一个简单的操作系统内核。在 Lab 0 中，我们将配置好实验环境并完成 3 个实验任务。
 
-## 1. 服务器操作
+## 1. 配置本地实验环境
 
-### 连接服务器
+先按照[本地环境配置](../guide/environment.md)准备 Linux 实验环境、AArch64 GNU 工具链、CMake、Make、Git 和 QEMU。Windows 可以使用 WSL2，macOS 可以使用本地 Linux 虚拟机；请在该 Linux 环境的终端中执行下文命令。
 
-```shell
-ssh root@10.176.34.210 -p 你的端口号
-```
-
-考虑到项目文件数目较多，我们推荐使用 [VS Code 的 Remote 插件](https://code.visualstudio.com/docs/remote/ssh) 进行远程开发。
-
-### 服务器概况
-
-容器内有两个特殊的目录（挂载点）：
-
-* `/share` 目录只读，供所有同学共享，其中放置一些共享文件。
-* `~/data` 目录可读写，挂载了一块4.4T的硬盘，建议在该目录下存储实验所用到的文件。
-
-CPU、内存和硬盘资源所有同学共享，无使用配额，请注意合理使用资源。
+本课程使用 QEMU 模拟 AArch64 四核机器，无需购买开发板。记录操作系统、CPU 架构和各工具版本，后续实验沿用同一环境。构建系统默认模拟 4 个 CPU、4 GiB 内存，请为本地环境预留相应资源，并保持课程的 QEMU 配置不变。
 
 ## 2. 配置代码仓库
 
-### 在服务器上生成 SSH 密钥对
+代码仓库为 [rfieldsy/OS-26Fall-FDU](https://github.com/rfieldsy/OS-26Fall-FDU)。完整的个人仓库、身份设置、SSH/HTTPS 认证、冲突处理及后续实验衔接步骤见 [Git 实验流程](../guide/workflow.md)。以下命令均在本地执行。
 
-```sh
-# 在终端输入，替换自己的邮箱地址
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com" 
-​
-# 按照提示连续按三次回车，即可生成ssh密钥
-cat ~/.ssh/id_rsa.pub
-# 观察到输出为：ssh-rsa xxxxxxxxxxxxxxx = xxxxx@xxxx.xx 即正确
-```
+### 克隆实验代码并记录基线
 
-### 在 Github 上配置 SSH 公钥
-
-1. 复制 `cat ~/.ssh/id_rsa.pub` 输出的结果（即公钥）。
-2. 打开 Github 并登录自己的账号。
-3. 点击右上角头像，进入 Settings ：
-
-    ![1](lab0-1.png)
-
-4. 进入页面后，在左侧选择 `SSH and GPG keys`, 在右侧点击 `New SSH Key`。
-
-    ![2](lab0-2.png)
-
-5. 在框中粘贴入自己复制的公钥，点击 Add SSH key 即可。
-
-### 使用 SSH 克隆仓库
+在自己存放课程项目的目录中执行；Git 的姓名和邮箱按 [Git 实验流程](../guide/workflow.md)配置为本人的信息。
 
 ```shell
-cd ~/data
-
-# SSH克隆代码仓库（HTTPS克隆不稳定）
-git clone git@github.com:FDUCSLG/OS-25Fall-FDU.git
+git clone -o upstream -b lab0 https://github.com/rfieldsy/OS-26Fall-FDU.git
+cd OS-26Fall-FDU
+git switch -c lab0-dev
+git tag lab0-start
+git rev-parse lab0-start
 ```
 
-> [!info]
->
-> 如果出现报错：（成功克隆则进入下一步）
->
-> ```shell
-> Cloning into 'OS-25Fall-FDU'...
-> git@github.com: Permission denied (publickey).
-> fatal: Could not read from remote repository.
-> Please make sure you have the correct access rights
-> and the repository exists.
-> ```
->
-> 请检查前两步：在服务器上生成 SSH 和在 Github 上配置 SSH 是否正确完成。
+`upstream` 指向课程框架，`lab0-dev` 用于自己的开发，`lab0-start` 记录开始实验时的代码。后续使用个人 Git 仓库时，将自己的仓库设为 `origin`，保留课程框架远端 `upstream`。
 
-### 进入仓库，开始实验
+### 构建并运行内核
 
-```sh
-cd OS-25Fall-FDU
-
-# 切换到本实验分支
-git checkout lab0
-
-# 新建一个dev分支
-git checkout -b lab0-dev
-
-# 创建build目录用来构建运行内核
-mkdir -p build
-cd build
-cmake ..
-```
-
-之后每次构建运行内核只要在 `build` 目录下 `cmake .. && make qemu` 。
-
-### 更新代码仓库
-
-本次实验中无需执行此部分，后续新实验发布后可参考此处更新代码仓库。
+在仓库根目录执行：
 
 ```shell
-# 拉取远端仓库
-git fetch --all
-
-# 提交你的更改
-git add .
-git commit -m "your commit message"
-
-# 切换到新lab的分支
-git checkout lab2
-
-# 新建一个分支，用于开发
-git checkout -b lab2-dev
-
-# 引入你在上个lab的更改
-git merge lab1-dev
+cmake -S . -B build
+cmake --build build --target qemu
 ```
 
-如果合并发生冲突，请参考错误信息自行解决。
+首次运行时，三个任务尚未实现，未出现四核的 `Hello, world!` 输出属于正常现象。完成任务后，再次执行上述命令检查结果。使用默认 Makefile 生成器时，也可以在 `build` 目录中执行原有的 `cmake ..` 和 `make qemu`。
+
+### 后续实验如何衔接
+
+先提交本次实验并记录 `lab0-submit`。Lab 1 框架已包含 BSS 清零和新的多核初始化流程，因此直接从 `upstream/lab1` 开始；Lab 2 及以后再从本次课程框架建立新分支，并合并上一实验提交。**完成框架合并并解决冲突后，先记录下一实验的 `labN-start`，再开始本次任务。** 每个实验页给出对应命令；不要直接覆盖自己的历史实现，合并和提交规则见 [Git 实验流程](../guide/workflow.md)。
 
 ## 3. QEMU
 
-本学期的实验将在 QEMU 模拟的 [virt 通用虚拟平台](https://www.qemu.org/docs/master/system/arm/virt.html) 上运行我们编写的内核。我们已经为大家配置好了 QEMU，运行内核只需在 `build` 目录下输入 `make qemu` 。
+本学期的实验将在 QEMU 模拟的 [virt 通用虚拟平台](https://www.qemu.org/docs/master/system/arm/virt.html) 上运行我们编写的内核。完成本地环境配置后，在仓库根目录执行 `cmake --build build --target qemu` 即可构建并运行内核。
 
 > [!info]
 >
 > **QEMU 命令解析（不要求掌握）**
 >
-> 本学期实验所用的 QEMU 命令如下：
+> 以下命令对应代码仓库的 QEMU 配置，需在已经构建成功的 `build` 目录中执行；通常直接使用上面的构建目标即可：
 >
 > ```shell
 > qemu-system-aarch64 -machine virt,gic-version=3 \
@@ -139,7 +66,7 @@ git merge lab1-dev
 >     -monitor none \
 >     -serial mon:stdio \
 >     -global virtio-mmio.force-legacy=false \
->     -kernel kernel8.elf\ 
+>     -kernel src/kernel8.elf
 > ```
 >
 > * `-machine virt,gic-version=3` 指定模拟的机器类型为 `virt`（QEMU 中用于模拟虚拟的 ARM 系统的标准平台）。 `gic-version=3` 指定要使用的全局中断控制器 (GIC) 的版本为 3，用于支持更现代的中断处理功能。
@@ -149,7 +76,7 @@ git merge lab1-dev
 > * `-monitor none` 禁用 QEMU 的监控控制台（QEMU monitor），避免了干扰正常的输出流。
 > * `-serial mon:stdio` 将虚拟机的串行端口绑定到标准输入输出（stdio），这意味着虚拟机的输出会显示在当前的终端窗口中，输入也来自终端。
 > * `-global virtio-mmio.force-legacy=false` 配置 QEMU 中的 VirtIO 设备（VirtIO 是一种用于加速虚拟化设备的标准）。`virtio-mmio.force-legacy=false` 禁用 VirtIO MMIO 设备的传统模式，确保这些设备使用现代化的接口。
-> * `-kernel kernel8.elf` 指定要加载的内核镜像文件 `kernel8.elf`。QEMU 会在虚拟机中启动这个内核，模拟其运行环境。
+> * `-kernel src/kernel8.elf` 指定要加载的内核镜像文件 `build/src/kernel8.elf`。QEMU 会在虚拟机中启动这个内核，模拟其运行环境。
 
 
 
@@ -183,7 +110,7 @@ git merge lab1-dev
 
 ### 入口：梦开始的地方
 
-我们通过链接器脚本（请见第7节）指定内核的入口为 `_start (src/start.S:28)` 函数。
+我们通过链接器脚本（请见第7节）指定内核的入口为 `_start` 函数（位于 `src/start.S`）。
 
 > [!note]
 >
@@ -201,7 +128,7 @@ git merge lab1-dev
 
 ### 对称多处理器（SMP）
 
-现代计算机广泛采用多处理器架构，感兴趣的同学可以通过 `lscpu` 命令查看我们服务器的处理器信息。同样地，我们的内核运行在 QEMU 虚拟出来的 4 核机器上。这 4 个核心可以并发（或者说并行，在这里我们暂不严格区分这两个概念）地执行不同的指令流。
+现代计算机广泛采用多处理器架构，感兴趣的同学可以在本地 Linux 环境中通过 `lscpu` 命令查看该环境的处理器信息。同样地，我们的内核运行在 QEMU 虚拟出来的 4 核机器上。这 4 个核心可以并发（或者说并行，在这里我们暂不严格区分这两个概念）地执行不同的指令流。
 
 > [!warning]
 >
@@ -209,7 +136,7 @@ git merge lab1-dev
 
 在我们的实验平台上，机器启动时仅有一个核（CPU 0）处于唤醒状态。作为唯一一个唤醒的核心，其主要负责：
 
-* 内核相关服务的初始化，例如 `uart_init` 用于初始化通信串口，UART 可用于输出数据，前面我们提到串行端口被绑定到了标准输入输出，**也就是说 `uart_*` 函数类似于过去所学的 `putchar` 等标准输入输出函数（相关函数请见`src/driver/uart.c`）**。`prink_init` 则用于初始化 `printk` 服务，**`printk` 更加类似于用户态编程中 `printf`，语法与效果也基本一致**。
+* 内核相关服务的初始化，例如 `uart_init` 用于初始化通信串口，UART 可用于输出数据，前面我们提到串行端口被绑定到了标准输入输出，**也就是说 `uart_*` 函数类似于过去所学的 `putchar` 等标准输入输出函数（相关函数请见`src/driver/uart.c`）**。`printk_init` 则用于初始化 `printk` 服务，**`printk` 更加类似于用户态编程中 `printf`，语法与效果也基本一致**。
 * 唤醒其他核心，即 `smp_init`。
 
 `main` 函数中的分支判断用于：
@@ -270,7 +197,7 @@ PROVIDE(edata = .);
 
 ```c
 extern char data[], edata[];
-printf("data is %p; edata is %p", (void*)data, (void*)edata);
+printk("data is %p; edata is %p", (void*)data, (void*)edata);
 ```
 
 > [!important]
@@ -283,19 +210,32 @@ printf("data is %p; edata is %p", (void*)data, (void*)edata);
 >
 > **提示 2**: 查找 `memset` 函数，使用此函数清零一段连续的内存空间。
 
-## 8. 提交
-
-**提交方式**：将实验报告提交到 elearning 上，格式为`学号-lab0.pdf`。本次实验中，**报告不计分**。
-
-**截止时间**： **9 月 19 日 23:59**。逾期提交将扣除部分分数。
-
-报告中可以包括下面内容
-
-* 代码运行效果展示
-* 实现思路和创新点
-* 对后续实验的建议
-* 其他任何你想写的内容
-
 ## 参考资料
 
 1. Arpaci-Dusseau, R. H., & Arpaci-Dusseau, A. C. (2018). Operating systems: Three easy pieces.
+
+## 8. 实验报告与提交
+
+本实验必须提交实验报告。在 elearning 对应作业中上传 `学号-lab0.pdf`，本次只交 PDF 报告，无需上传代码；沿用原安排，Lab 0 报告不单独计分。请保留本地代码和 Git 记录，后续实验需要继续使用。具体日期和迟交安排以本学期 elearning 作业说明为准。
+
+报告必须包括：
+
+1. **实验环境与版本**：本地系统和架构、工具版本、`lab0-start` 与最终提交的完整 commit hash。
+2. **实验思路**：分别说明任务 1、2、3 的实现思路，以及 CPU 0 初始化、放行其他核心和清零 BSS 的顺序。
+3. **实现方式**：列出修改过的文件、关键函数和使用的链接器符号，解释 BSS 地址范围及清零原因。可以用少量关键代码或流程图，不需要粘贴大段代码。
+4. **实验结果与测试**：给出构建和运行命令、四个核心的实际输出与截图/日志，说明为什么后三个核心的输出顺序可以不同；如有失败，记录现象、定位过程和修复结果。
+5. **问题回答与总结**：回答本页任务和提示中的问题，说明遇到的困难、解决方法和仍存在的问题。
+
+在仓库根目录检查修改后记录完成版本：
+
+```shell
+git status --short
+git add -A
+git diff --cached --stat
+git commit -m "Complete Lab 0"
+git tag lab0-submit
+git rev-parse lab0-start
+git rev-parse lab0-submit
+```
+
+只暂存实验源码及必要配置；不要加入构建产物、磁盘镜像或个人凭据。若已经提交了全部修改，跳过 `git commit`。标签只在首次完成时创建，重新提交的版本记录方法见[统一提交规范](../guide/submission.md)。

@@ -14,8 +14,11 @@ import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-i
 import { transformerTwoslash } from '@shikijs/vitepress-twoslash';
 
 export const shared = defineConfig({
-  title: 'OS-25Fall-FDU',
+  title: 'OS-26Fall-FDU',
+  base: '/OS-26Fall-FDU.github.io/',
   lastUpdated: true,
+  // Only Lab0 is released. Later Markdown remains available in the local delivery.
+  srcExclude: process.env.OS_DOCS_PREVIEW_ALL === '1' ? [] : ['lab/lab1.md', 'lab/lab2.md', 'lab/lab3.md', 'lab/lab4.md', 'lab/lab5.md', 'lab/lab6.md', 'lab/lab-final.md'],
   cleanUrls: true,
   metaChunk: true,
   vite: {
@@ -27,15 +30,15 @@ export const shared = defineConfig({
     plugins: [
       GitChangelog({
         maxGitLogCount: 2000,
-        repoURL: () => 'https://github.com/FDUCSLG/OS-25Fall-FDU.github.io',
+        repoURL: () => 'https://github.com/JiaXtian/OS-26Fall-FDU.github.io',
       }),
       GitChangelogMarkdownSection({
-        exclude: (id) => id.endsWith('index.md') || id.endsWith('team.md'),
+        exclude: (id) => id.endsWith('index.md'),
         sections: {
           // 禁用页面历史
           disableChangelog: true,
           // 禁用贡献者
-          disableContributors: false,
+          disableContributors: true,
         },
       }) as any,
       PageProperties(),
@@ -73,7 +76,7 @@ export const shared = defineConfig({
   },
 
   sitemap: {
-    hostname: 'https://ics-25fall-fdu.github.io//',
+    hostname: 'https://jiaxtian.github.io/OS-26Fall-FDU.github.io/',
     transformItems(items) {
       return items.filter((item) => !item.url.includes('migration'))
     }
@@ -87,12 +90,12 @@ export const shared = defineConfig({
         rel: 'icon',
         type: 'image/png',
         sizes: '32x32',
-        href: '/assets/newlogo.png'
+        href: '/OS-26Fall-FDU.github.io/assets/logo.png'
       }
     ],
-    ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/assets/logo.png' }],
-    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/assets/logo.png' }],
-    ['link', { rel: 'mask-icon', href: '/assets/logo.png', color: '#5bbad5' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/OS-26Fall-FDU.github.io/assets/logo.png' }],
+    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/OS-26Fall-FDU.github.io/assets/logo.png' }],
+    ['link', { rel: 'mask-icon', href: '/OS-26Fall-FDU.github.io/assets/logo.png', color: '#5bbad5' }],
     ['meta', { name: 'theme-color', content: '#5f67ee' }],
   ],
 
@@ -102,6 +105,6 @@ export const shared = defineConfig({
     search: {
       provider: 'local'
     },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/FDUCSLG' }]
+    socialLinks: [{ icon: 'github', link: 'https://github.com/rfieldsy/OS-26Fall-FDU' }]
   }
 })

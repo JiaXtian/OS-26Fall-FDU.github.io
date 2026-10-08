@@ -2,7 +2,7 @@ import { defineConfig, type DefaultTheme } from 'vitepress'
 
 export const zh = defineConfig({
   lang: 'zh-CN',
-  description: 'FDUer 计算机入门指南',
+  description: '复旦大学 2026 年秋季操作系统课程实验',
 
   themeConfig: {
     nav: nav(),
@@ -10,7 +10,7 @@ export const zh = defineConfig({
     sidebar: sidebarGuide(),
 
     editLink: {
-      pattern: 'https://github.com/FDUCSLG/OS-25Fall-FDU.github.io/edit/main/docs/:path',
+      pattern: 'https://github.com/JiaXtian/OS-26Fall-FDU.github.io/edit/main/docs/:path',
       text: '在 GitHub 上编辑此页面'
     },
 
@@ -43,32 +43,19 @@ export const zh = defineConfig({
 function nav(): DefaultTheme.NavItem[] {
   return [
     { text: '首页', link: '/' },
-    { text: '团队', link: '/team' }
+    { text: 'Lab0', link: '/lab/lab0' },
+    { text: '本地环境', link: '/guide/environment' }
   ]
 }
 
 function sidebarGuide(): DefaultTheme.Sidebar {
   return [
-    {
-      text: '首页',
-      link: '/index'
-    },
-    {
-      text: '实验',
-      items: [
-        { text: 'Lab 0: Booting', link: '/lab/lab0' },
-        { text: 'Lab 1: Allocator', link: '/lab/lab1' },
-        { text: 'Lab 2: Process (Kernel Part)', link: '/lab/lab2' },
-        { text: 'Lab 3: Process (User Part)', link: '/lab/lab3' },
-        { text: 'Lab 4: VirtIO Driver', link: '/lab/lab4' },
-        { text: 'Lab 5: Logging File System', link: '/lab/lab5' },
-        { text: 'Lab 6: Inode-based File System', link: '/lab/lab6' },
-        { text: 'Lab Final', link: '/lab/lab-final' },
-      ]
-    },
-    {
-      text: '团队',
-      link: '/team'
-    },
+    { text: '首页', link: '/' },
+    { text: '准备工作', items: [
+      { text: '本地实验环境', link: '/guide/environment' },
+    ] },
+    { text: '已发布实验', items: [
+      { text: 'Lab 0: Booting', link: '/lab/lab0' },
+    ] },
   ]
 }

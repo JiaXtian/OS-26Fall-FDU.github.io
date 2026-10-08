@@ -297,9 +297,6 @@ printk("data is %p; edata is %p", (void*)data, (void*)edata);
 >
 > **提示 2**: 查找 `memset` 函数，使用此函数清零一段连续的内存空间。
 
-## 参考资料
-
-1. Arpaci-Dusseau, R. H., & Arpaci-Dusseau, A. C. (2018). Operating systems: Three easy pieces.
 
 ## 8. 实验报告与提交
 
@@ -314,3 +311,7 @@ printk("data is %p; edata is %p", (void*)data, (void*)edata);
 5. **问题回答与总结**：回答本页任务和提示中的问题，可说明遇到的困难、解决方法和仍存在的问题。
 
 报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。
+
+## 参考资料
+
+1. Arpaci-Dusseau, R. H., & Arpaci-Dusseau, A. C. (2018). Operating systems: Three easy pieces.

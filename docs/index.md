@@ -10,9 +10,7 @@ next: false
 
 ## 开始实验
 
-1. 按[本地实验环境](./guide/environment.md)准备 Linux、GNU 工具链与 QEMU。
-2. 按[Git 工作流](./guide/workflow.md)获取 [2026 实验代码](https://github.com/rfieldsy/OS-26Fall-FDU)，进入对应实验分支。
-3. 阅读 [Lab0](./lab/lab0.md)，完成任务并按[提交规范](./guide/submission.md)提交报告。
+打开 [Lab0 · Booting](./lab/lab0.md)，按自己的操作系统完成环境配置，然后获取代码、完成实验任务并提交报告。环境配置、Git 操作和报告要求均写在对应实验页中。
 
 所有实验在本地完成。每次实验都必须提交报告，具体提交时间以本学期 eLearning 作业公告为准。
 
@@ -31,4 +29,4 @@ next: false
 | Lab6 · Inode-based FS | 实现基于 Inode 的文件系统 | 2 周 | 第 10–11 周 | 待发布 |
 | LabFinal | 实现 Pipe、Console、ELF 加载等功能，最终启动 shell | 2 周 | 第 12–13 周 | 待发布 |
 
-课程实验按上述顺序推进，后续实验依赖前序实现。请及时保存工作分支、完成版本与测试记录。
+课程实验按上述顺序推进，后续实验依赖前序实现。请及时保存本地代码与测试记录。

@@ -43,17 +43,13 @@ export const zh = defineConfig({
 function nav(): DefaultTheme.NavItem[] {
   return [
     { text: '首页', link: '/' },
-    { text: 'Lab0', link: '/lab/lab0' },
-    { text: '本地环境', link: '/guide/environment' }
+    { text: 'Lab0', link: '/lab/lab0' }
   ]
 }
 
 function sidebarGuide(): DefaultTheme.Sidebar {
   return [
     { text: '首页', link: '/' },
-    { text: '准备工作', items: [
-      { text: '本地实验环境', link: '/guide/environment' },
-    ] },
     { text: '已发布实验', items: [
       { text: 'Lab 0: Booting', link: '/lab/lab0' },
     ] },

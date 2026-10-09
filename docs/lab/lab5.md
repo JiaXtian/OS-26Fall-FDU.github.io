@@ -1,33 +1,46 @@
 # Lab 5: Logging File System
 
-负责助教：[唐傑伟](mailto:22302010060@m.fudan.edu.cn)
-
 
 本次实验的目的是熟悉日志文件系统和块设备缓存的实现。
 
 > _操作系统的本质：虚拟化、并发、**持久化**_
 
-## 1. 服务器操作
+## 1. 实验准备（1周）
+
+本实验在已完成的 `lab4-dev` 基础上，引入课程 `lab5` 框架；需要保留自己的前序实现。 使用 [Lab0 中配置的 Ubuntu 环境](./lab0.md#_1-配置本地实验环境)，在 Linux 终端操作。
+
+首次开始本实验时，先回到原有仓库，确认当前位于已完成的 `lab4-dev` 分支：
 
 ```shell
-# 拉取远端仓库
-git fetch --all
-
-# 提交你的更改
-git add .
-git commit -m "your commit message"
-
-# 切换到新lab的分支
-git checkout lab5
-
-# 新建一个分支，用于开发
-git checkout -b lab5-dev
-
-# 引入你在上个lab的更改
-git merge lab4-dev
+cd ~/os-course/OS-26Fall-FDU
+git status
 ```
 
-如果合并发生冲突，请参考错误信息自行解决（可在VSCode中手动选择合并，本次实验中sched.c部分可能出现冲突需要合并）
+若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过这两条命令。执行前确认修改列表中只有需要保留的源码和配置。
+
+```shell
+git add -A
+git commit -m "Save lab4 work"
+```
+
+确认工作区干净后，获取课程框架并创建本次工作分支：
+
+```shell
+git fetch upstream
+git switch -c lab5-dev upstream/lab5
+git merge lab4-dev --no-edit
+```
+
+如果提示合并冲突，运行 `git status` 查看文件；打开这些文件，处理 `<<<<<<<`、`=======`、`>>>>>>>` 标记间的内容，同时保留自己的实现和本次框架的新接口、初始化流程、测试。去掉冲突标记并保存后执行：
+
+```shell
+git add -A
+git commit -m "Resolve lab5 merge conflicts"
+```
+
+没有冲突时无需执行以上两条命令。不要直接用一方文件覆盖所有冲突。
+
+以上获取框架的步骤只执行一次。已经开始本实验时，在工作区干净的前提下用 `git switch lab5-dev` 返回本次分支，继续修改即可，无需重新创建或合并。
 
 ## 2. Unalertable Waiting 机制的更新
 
@@ -97,17 +110,20 @@ void block_release(Block *block);
 > [!danger]
 > **注意**
 >
-> 这里的 0 代表我们的文件系统的起始块号，不是实际的虚拟存储的起始块号。文件存储布局请参考 Lab 4。
+> 本表块号相对文件系统分区起点。当前仓库的 `src/user/mkfs/main.c` 保留相对块 0，将超级块写在相对块 1（`wsect(1, buf)`），并设 `log_start = 2`。这是对旧文档超级块位置的勘误；不要把文件系统相对块号直接当成整盘 LBA。分区布局请参考 [Lab 4](./lab4.md)。
 
 | 起始块号           | 长度                                             | 用途       |
 | -------------- | ---------------------------------------------- | -------- |
-| 0              | 1                                              | 超级块      |
+| 0              | 1                                              | 保留块      |
+| 1              | 1                                              | 超级块      |
 | `log_start`    | `num_log_blocks`                               | 日志区域     |
 | `inode_start`  | `num_inodes * sizeof(InodeEntry) / BLOCK_SIZE` | inode 区域 |
 | `bitmap_start` | `num_bitmap_blocks`                            | 位图区域     |
 | `data_start`   | `num_data_blocks`                              | 数据区域     |
 
 内存擅长小块随机读写，而硬盘只能大块整读整写，因此位图的效率反而比其他内存中使用过的动态分配器（例如 SLAB）要高。
+
+表中的 `num_bitmap_blocks` 和 `data_start` 是布局说明用的名称，当前 `SuperBlock` 中没有这两个字段；应依据超级块已有字段及 `mkfs` 的布局确定范围，不要直接按示意表访问不存在的成员。
 
 硬盘和内存的分配器的接口是类似的：
 
@@ -182,6 +198,8 @@ void end_op(OpContext *ctx);
 > 本实验为简单起见，按照日志协议时块缓存总表现为写直达，不使用写回，以确保数据真正落盘。
 
 ### 3.6 对外接口的使用示例
+
+以下示例沿用接口说明；当前 `cache.h` 声明的是全局对象 `extern BlockCache bcache`，在实际代码中应写 `bcache.acquire(...)` 等点号调用；只有持有 `BlockCache *` 时才使用箭头。
 
 读块：
 
@@ -328,6 +346,8 @@ static void cache_free(OpContext *ctx, usize block_no)
 
 ## 5. 测试方式
 
+**测试环境：使用 Linux 中的 GNU GCC/G++。** 测试项目使用 C11、C++17、pthread 和 UndefinedBehaviorSanitizer，且包含 GCC 参数 `-ftree-pre`；macOS 的 `gcc` 通常实际为 Apple Clang，请在 [Linux 实验环境](./lab0.md#_1-配置本地实验环境)中执行以下命令。Mock 测试无需 QEMU 或磁盘镜像。
+
 有趣的是，文件系统本身作为一个抽象实现，理论上只要提供了正确的接口（例如块设备、内存分配器、锁等），本身应当是具有良好跨平台性的。因此，本次实验我们使用了基于 Mock 的评测方法，离开 QEMU 环境来测试你的文件系统。相关 C/C++ 代码在 `src/fs/test` 目录下。
 
 我们仅 mock 了以下方法，因此请保证你只调用了在前面实验中出现的这些方法（理论上你也不该用到其他方法，否则说明你的实现不具有跨平台性）：
@@ -345,27 +365,17 @@ void yield();
 // RefCount 方法集
 ```
 
-首次评测时请在 `src/fs/test` 下执行：
+在仓库根目录配置并运行（切换到本实验分支后重新配置）：
 
 ```sh
-$ mkdir build
-$ cd build
-$ cmake ..
+cmake -S src/fs/test -B src/fs/test/build -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+cmake --build src/fs/test/build --target cache_test
+./src/fs/test/build/cache_test
 ```
 
-之后每次评测时请在 `src/fs/test/build` 下执行：
+如果构建目录曾使用其他编译器，请先备份需要保留的测试日志，删除 `src/fs/test/build` 后重新配置。普通源码改动只需重新构建，无需反复清理。
 
-```sh
-$ make && ./cache_test
-```
-
-如果报错，请尝试清理：
-
-```sh
-$ make clean
-```
-
-通过标准：最后一行出现 `(info) OK: 23 tests passed.`。此外助教会通过测试的输出判断测试是否在正常运行。
+通过标准：最后一行出现 `(info) OK: 23 tests passed.`。必须保留完整输出。`overflow`、`alloc` 等用例会故意触发并捕获异常，参考日志中的 `(fatal)` 不应单独判为失败；应结合每个用例的 `passed` 和最终 23 项通过汇总判断。测试框架在失败时也可能以 0 退出，因此仅看退出码不够。
 
 助教的测试结果样例输出：（仅供参考，无需完全一致）
 
@@ -441,6 +451,19 @@ $ make clean
 >
 > 上述测试只用于检测`cache.c`中内容是否正确运行， 任务 1-3 的内容是否正确完成至少需要确保在 `build/`运行`make qemu`时能正确跑通（可以打开`core.c`中`proc_test()`和`user_proc_test`尝试运行）
 
+### 5.1. QEMU 回归与磁盘接口衔接
+
+Mock 只覆盖文件系统接口；任务 1—3 还需使用自己的累计实现，在根目录的 `build` 中分别运行 Lab 2、Lab 3 回归，确认等待、正常唤醒、被 `kill` 打断和 `DEEPSLEEPING` 的处理。`onalert=true` 对应 `alert_proc` 的打断请求，`onalert=false` 对应 `activate_proc` 的正常唤醒；它们不是是否主动调用函数的区别。
+
+```sh
+cmake -S . -B build
+cmake --build build --target qemu
+```
+
+`boot/generate-image.py` 会使用仓库内的 `src/user/mkfs/main.c` 在本地生成镜像，依赖 Python 3、主机 C 编译器、`mkfs.vfat`、`mcopy`、`sfdisk` 和 `dd`，无需下载预制镜像。脚本使用固定的 `../build` 相对路径，请保持根目录构建目录名为 `build`。
+
+后续将 Mock 实现接入真实块设备时，沿用 Lab 4 解析的第二分区起始 LBA，在块设备封装层统一换算 `整盘 LBA = 分区起始 LBA + 文件系统相对块号`，并在文件系统初始化之前读取相对块 1 的超级块。当前 `block_device.c` 仅保留接口骨架，`sblock_data` 尚未装载磁盘数据；仅调用 `init_block_device()` 不会自动完成这一步。不要在 `cache.c` 中硬编码分区偏移或绕过传入的 `BlockDevice`，否则会破坏 Mock 测试的抽象边界。这一说明用于衔接既有 Lab 4 和文件系统接口，不新增块缓存功能。
+
 ## 6. 评分标准
 
 本次实验的评分标准如下：
@@ -448,6 +471,9 @@ $ make clean
 - **核心实现**：70%
 - **前序 Lab2、Lab3 功能正确**：20%
 - **思考题**：30%
+
+> [!warning]
+> 原文列出的比例合计为 120%，存在口径冲突；具体计分权重以本学期 eLearning 评分细则为准，本页不作自行归一化。
 
 
 | Test              | Score |
@@ -478,51 +504,24 @@ $ make clean
 
 
 
-## 7. 提交
+## 7. 参考资料
 
-**提交方式**：将实验报告提交到 elearning 上，格式为 `学号-lab5.pdf` 。
-
-**注意**：从 `lab1` 开始，用于评分的代码以实验报告提交时为准。如果需要使用新的代码版本，请重新提交实验报告。
-
-**截止时间**：<mark style="color:red;">**12月7日23:59**</mark>。
-
-
-
-
-> [!danger]
->
-> **逾期提交将扣除部分分数**
->
-> 计算方式为 $\text{score}_{\text{final}} = \text{score} \cdot \left(1 - n \cdot 20\% \right)$，其中 $n$ 为迟交天数，不满一天按一天计算）。
-
-报告中可以包括下面内容
-
-* 代码运行效果展示
-* <mark style="color:red;">**讨论你的程序在事务执行的各个阶段（事务开始、块、写回）崩溃时，以及并发时下如何保证一致性。**</mark>
-* <mark style="color:red;">**讨论为了实现文件系统，你对调度做了哪些改动。**</mark>
-* 实现思路和创新点
-* 对后续实验的建议
-*   其他任何你想写的内容
-
-    > ~~你甚至可以再放一只可爱猫猫~~
-
-报告中不应有大段代码的复制。如有使用本地环境进行实验的同学，请在elearning上提交代码，提交前执行`make clean`。使用服务器进行实验的同学，助教会在服务器上检查，不需要另外提交代码。
-
-在服务器上操作的同学，此次实验完成后请提交（或者说创建一个新分支）到 `lab5-submission` 分支，助教会使用你在此分支上提交记录来批作业。如果此分支最后提交时间晚于实验报告提交时间，助教会选择此分支上在实验报告提交时间前的最后一个提交作为批改代码。
-
-**提交操作**：
-
-```shell
-# 提交最后的代码
-git add .
-git commit -m "your final commit message"
-
-# 新建一个分支，用于提交
-git checkout -b lab5-submission
-```
-
-## 8. 参考资料
-
-1. OS2020助教对Lab中涉及的xv6文件系统的介绍：https://github.com/FDUCSLG/OS-2022Fall-Fudan/blob/lab10/doc/filesystem-v4.pdf （可阅读其中关于本次实验(P. 26-P. 33)的部分，其中还包含了下次实验(inode等)的内容）
+1. xv6 文件系统补充讲义：https://github.com/FDUCSLG/OS-2022Fall-Fudan/blob/lab10/doc/filesystem-v4.pdf （可阅读其中关于本次实验(P. 26-P. 33)的部分，其中还包含了下次实验(inode等)的内容）
 2. 聊聊 xv6 中的文件系统：https://www.cnblogs.com/KatyuMarisaBlog/p/14366115.html
 3. xv6 中文文档：https://th0ar.gitbooks.io/xv6-chinese/content/content/chapter6.html
+
+
+## 8. 实验报告与提交
+
+每位同学必须在 elearning 对应作业中提交 **`学号-lab5.pdf` 实验报告**。具体提交日期和迟交安排以本学期 elearning 作业说明为准。
+
+报告必须包括：
+
+1. **实验环境**：操作系统、CPU 架构、编译器、CMake 和 QEMU 版本，以及实际使用的运行环境（原生 Ubuntu、WSL2 或虚拟机）。
+2. **实验思路**：按本页各任务说明目标、数据结构、关键不变量、同步关系与设计理由，不能仅给出运行截图。
+3. **实现方式**：列出本次修改的文件及对应功能，说明主要流程、边界处理、失败处理与调试过程。可以使用简短伪代码、流程图或关键片段，不要求粘贴大段完整代码。
+4. **实验结果**：给出可复现的构建和测试命令、完整测试日志或其附件、关键结果截图；如有未通过项目，写清实际现象、原因分析与当前完成程度。
+5. **本实验分析**：回答本页全部思考题，重点讨论事务开始、日志记录、提交及写回等阶段崩溃时的一致性，以及并发事务、日志吸收和丢失唤醒的处理；说明为了支持文件系统，对调度器、`kill` 与信号量调用作了哪些修改。
+6. **验证范围**：分别列出 23 项 `cache_test` 的结果与 QEMU 中 Lab 2/Lab 3 回归结果，不用 Mock 通过代替调度验证。
+
+报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。

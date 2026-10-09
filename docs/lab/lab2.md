@@ -1,6 +1,6 @@
 # Lab 2: Process (Kernel Part)
 
-负责助教：[孔令宇](mailto:lykong22@m.fudan.edu.cn)
+**实验周期：2 周。** 请在本地完成实验，具体提交日期以本学期 elearning 作业为准。
 
 本实验中，我们将引入进程的概念，并实现如下的进程**状态转换**逻辑。
 
@@ -22,29 +22,51 @@ C -- exit() --> E
 
 我们会先实现负责管理和调度进程的一系列内核库，然后创建一些简易的、运行在内核地址空间的进程。下一个实验，我们将结合页表，引入真正的、拥有独立地址空间的用户态进程。
 
-## 1. 服务器操作
+## 1. 获取本次实验框架
 
-运行以下命令进行代码的拉取与合并
+本实验在已完成的 `lab1-dev` 基础上，引入课程 `lab2` 框架；需要保留自己的前序实现。 使用 [Lab0 中配置的 Ubuntu 环境](./lab0.md#_1-配置本地实验环境)，在 Linux 终端操作。
+
+首次开始本实验时，先回到原有仓库，确认当前位于已完成的 `lab1-dev` 分支：
 
 ```shell
-# 拉取远端仓库
-git fetch --all
-
-# 提交你的更改
-git add .
-git commit -m "your commit message"
-
-# 切换到新lab的分支
-git checkout lab2
-
-# 新建一个分支，用于开发
-git checkout -b lab2-dev
-
-# 引入你在上个lab的更改
-git merge lab1-dev
+cd ~/os-course/OS-26Fall-FDU
+git status
 ```
 
-如果合并发生冲突，请参考错误信息自行解决。
+若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过这两条命令。执行前确认修改列表中只有需要保留的源码和配置。
+
+```shell
+git add -A
+git commit -m "Save lab1 work"
+```
+
+确认工作区干净后，获取课程框架并创建本次工作分支：
+
+```shell
+git fetch upstream
+git switch -c lab2-dev upstream/lab2
+git merge lab1-dev --no-edit
+```
+
+如果提示合并冲突，运行 `git status` 查看文件；打开这些文件，处理 `<<<<<<<`、`=======`、`>>>>>>>` 标记间的内容，同时保留自己的实现和本次框架的新接口、初始化流程、测试。去掉冲突标记并保存后执行：
+
+```shell
+git add -A
+git commit -m "Resolve lab2 merge conflicts"
+```
+
+没有冲突时无需执行以上两条命令。不要直接用一方文件覆盖所有冲突。
+
+以上获取框架的步骤只执行一次。已经开始本实验时，在工作区干净的前提下用 `git switch lab2-dev` 返回本次分支，继续修改即可，无需重新创建或合并。
+
+首次切换到本次框架后，在仓库根目录删除仅含生成文件的旧构建目录并重新配置：
+
+```shell
+rm -rf build
+cmake -S . -B build -G "Unix Makefiles"
+```
+
+完成任务后使用 `cmake --build build --target qemu` 构建和运行。框架包含待实现内容，完成前出现编译或测试失败时，请结合 TODO 和本页任务检查。
 
 ## 2. 进程 Process
 
@@ -202,12 +224,14 @@ typedef struct Proc {
 
 信号量维护了一个值 val 以及一个等待队列 sleeplist。val 提示此信号量的资源量，对于信号量的操作上分为P、V操作（对应wait、post）。通俗的理解post是生产、wait是消费
 
-* `wait_sem`：val --，消费一份资源，当 val = 0 时，此进程会被进入 SLEEPING 阶段，并且挂在 sleeplist 上。
-* `post_sem`：val ++，生产一份资源，此时 SLEEPING 阶段的进程会被唤醒。
+* `wait_sem`：先执行 `--val`；结果非负时立即获得资源，结果为负时才加入 `sleeplist` 并进入 `SLEEPING`。
+* `post_sem`：先执行 `++val`；结果小于等于零时，从等待队列中唤醒一个进程。
+
+**实现核对补充**：以上条件对应本实验 `src/common/sem.c` 的实际实现，区分的是自增/自减之后的值。它澄清原说明中的边界条件，不要求重新实现框架已经提供的信号量。
 
 当 val 的值初始化 = 0 时，可以做到等待子进程唤醒的功能。而当 val 的值初始化 = 1 时，可以做到类似锁的效果。
 
-## 6.2 其他提示
+### 6.2 其他提示
 
 * 时钟中断相关的可以先忽略，应该不影响测试，下一个实验进行细节补充。
 * [虎鲸视频](https://www.bilibili.com/video/BV1tV4y1N7aP)
@@ -221,37 +245,19 @@ typedef struct Proc {
 * `kernel/sched.c: thisproc init_schinfo acquire_sched_lock release_sched_lock activate_proc sched(update_this_state pick_next update_this_proc)`
 * `kernel/cpu.h: sched`
 
+**框架核对补充**：以上路径均相对于 `src/`。`src/kernel/sched.c` 中的 `init_sched()` 也有待补全的初始化逻辑，并由 `src/main.c` 在 `init_kproc()` 前调用；它属于原有“初始化调度器”的工作，请不要遗漏。上下文结构布局必须与 `swtch.S`、`trap.S` 的寄存器保存/恢复偏移保持一致。
+
 我们已经在 kernel\_entry 中编写了调用 proc\_test 的代码。如果一切顺利，将输出 proc\_test PASS。之后会有三个CPU 弹出 Living 的提示，因为收到了时钟中断的信号。
 
-## 8. 提交
+## 8. 实验报告与提交
 
-**提交方式**：将实验报告提交到 elearning 上，格式为`学号-lab2.pdf`。
+每位同学必须在 elearning 对应作业中提交 **`学号-lab2.pdf` 实验报告**。具体提交日期和迟交安排以本学期 elearning 作业说明为准。
 
-**截止时间**：**10月26日23:59**
+报告必须包括：
 
-> [!danger]
->
-> **逾期提交将扣除部分分数**
->
-> 计算方式为 $\text{score}_{\text{final}} = \text{score} \cdot \left(1 - n \cdot 20\% \right)$，其中 $n$ 为迟交天数，不满一天按一天计算）。
+1. **实验环境**：操作系统、CPU 架构、编译器、CMake 和 QEMU 版本，以及实际使用的运行环境（原生 Ubuntu、WSL2 或虚拟机）。
+2. **实验思路与实现方式**：说明进程树、PID 分配、父子关系、创建/退出/回收流程、状态转换、调度队列和 idle 进程设计；解释锁的顺序、上下文结构与汇编保存/恢复的对应关系，列出关键修改文件及函数。
+3. **实验结果与测试**：给出构建和运行命令、`proc_test PASS` 日志或截图，结合 `src/test/proc_test.c` 说明父子进程退出、孤儿进程转移、等待与唤醒的测试结果；记录发生过的死锁、异常或资源问题及其定位过程。
+4. **问题回答与总结**：逐项回答本页“思考”问题，说明上下文需保存哪些寄存器、父进程选择、`proc_entry`、直接睡眠及直接返回的影响；说明尚存问题。
 
-报告中可以包括下面内容
-
-* 代码运行效果展示
-* 实现思路和创新点
-* 对后续实验的建议
-* 其他任何你想写的内容 (~~你甚至可以再放一只可爱猫猫~~)
-
-报告中不应有大段代码的复制。如有使用本地环境进行实验的同学，请联系助教提交代码（提供 `git` 仓库）。使用服务器进行实验的同学，助教将在服务器上检查，无需另外提交代码。
-
-> [!important]
->
-> **提交操作**：
->
-> ```shell
-> # 提交最后的代码
-> git add .
-> git commit -m "your final commit message"
-> ```
->
-> 从本次实验开始，我们会在**不晚于你提交实验报告时间**的最后一次 commit 上批改你的代码，如果你有新的 commit，请在 elearning 上重新提交实验报告。
+报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。

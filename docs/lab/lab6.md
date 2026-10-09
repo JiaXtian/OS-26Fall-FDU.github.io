@@ -1,28 +1,43 @@
 # Lab 6: Inode-based File System
 
-负责助教：[唐傑伟](mailto:22302010060@m.fudan.edu.cn)
-
 本次实验将实现基于 Inode 的文件系统的基础底层操作。**本实验工作量较大，请大家尽早开始。**
 
-## 1. 服务器操作
+## 1. 实验准备（2周）
+
+本实验在已完成的 `lab5-dev` 基础上，引入课程 `lab6` 框架；需要保留自己的前序实现。 使用 [Lab0 中配置的 Ubuntu 环境](./lab0.md#_1-配置本地实验环境)，在 Linux 终端操作。
+
+首次开始本实验时，先回到原有仓库，确认当前位于已完成的 `lab5-dev` 分支：
 
 ```shell
-# 拉取远端仓库
-git fetch --all
-
-# 提交你的更改
-git add .
-git commit -m "your commit message"
-
-# 切换到新lab的分支
-git checkout lab6
-
-# 新建一个分支，用于开发
-git checkout -b lab6-dev
-
-# 引入你在上个lab的更改
-git merge lab5-dev
+cd ~/os-course/OS-26Fall-FDU
+git status
 ```
+
+若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过这两条命令。执行前确认修改列表中只有需要保留的源码和配置。
+
+```shell
+git add -A
+git commit -m "Save lab5 work"
+```
+
+确认工作区干净后，获取课程框架并创建本次工作分支：
+
+```shell
+git fetch upstream
+git switch -c lab6-dev upstream/lab6
+git merge lab5-dev --no-edit
+```
+
+如果提示合并冲突，运行 `git status` 查看文件；打开这些文件，处理 `<<<<<<<`、`=======`、`>>>>>>>` 标记间的内容，同时保留自己的实现和本次框架的新接口、初始化流程、测试。去掉冲突标记并保存后执行：
+
+```shell
+git add -A
+git commit -m "Resolve lab6 merge conflicts"
+```
+
+没有冲突时无需执行以上两条命令。不要直接用一方文件覆盖所有冲突。
+
+以上获取框架的步骤只执行一次。已经开始本实验时，在工作区干净的前提下用 `git switch lab6-dev` 返回本次分支，继续修改即可，无需重新创建或合并。
 
 ## 2. 文件和目录
 
@@ -48,15 +63,18 @@ Inode 的名称是 **I**ndex **node** 的缩写，它是文件系统中的一个
 Inode 在文件系统中的位置如下：
 
 > [!warning]
-> **注意：**这里的 0 代表我们的文件系统的起始块号，不是实际的 SD 卡的起始块号。SD 卡布局参考 Lab 4 文档中相关布局。
+> **注意：**本表块号相对文件系统分区起点，不是整盘 LBA。当前仓库 `mkfs` 保留相对块 0，并在相对块 1 写入超级块，日志从相对块 2 开始；分区偏移及超级块装载见 [Lab 5 的接口衔接说明](./lab5.md#_5-1-qemu-回归与磁盘接口衔接)。
 
 | 起始块号           | 长度                                             | 用途           |
 | -------------- | ---------------------------------------------- | ------------ |
-| 0              | 1                                              | 超级块          |
+| 0              | 1                                              | 保留块          |
+| 1              | 1                                              | 超级块          |
 | `log_start`    | `num_log_blocks`                               | 日志区域         |
 | `inode_start`  | `num_inodes * sizeof(InodeEntry) / BLOCK_SIZE` | **inode 区域** |
 | `bitmap_start` | `num_bitmap_blocks`                            | 位图区域         |
 | `data_start`   | `num_data_blocks`                              | 数据区域         |
+
+本表的 `num_bitmap_blocks`、`data_start` 是布局示意名称，并非 `SuperBlock` 的成员；实现时以 `src/fs/defines.h` 和 `src/user/mkfs/main.c` 为准。
 
 为了便于管理，我们的每个 Inode 都具有一个编号。这个编号就是 Inode 在 Inode 区域中的偏移量，第一个 Inode 的编号为 1，第二个 Inode 的编号为 2，以此类推。
 
@@ -307,29 +325,21 @@ int lookup(Inode *dir_inode, const char *name);
 
 ## 5. 评测
 
-本次实验我们继续使用基于 Mock 的评测方法，离开virtio环境来测试你的文件系统。相关 C/C++ 代码在 `src/fs/test` 目录下。
+本次实验我们继续使用基于 Mock 的评测方法，离开 QEMU/VirtIO 环境来测试你的文件系统。相关 C/C++ 代码在 `src/fs/test` 目录下。
 
-首次评测时请在 `src/fs/test` 下执行：
-
-```sh
-$ mkdir build
-$ cd build
-$ cmake ..
-```
-
-之后每次评测时请在 `src/fs/test/build` 下执行：
+使用与 Lab 5 相同的 Linux GNU GCC/G++ 环境，从仓库根目录运行：
 
 ```sh
-$ make inode_test && ./inode_test
+cmake -S src/fs/test -B src/fs/test/build -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+cmake --build src/fs/test/build --target inode_test
+./src/fs/test/build/inode_test
 ```
 
-如果报错，请尝试清理：
+切换分支后需要重新运行 CMake，才能获得本实验新增的 `inode_test` 目标。若之前使用其他编译器配置过该目录，请保留日志后删除 `src/fs/test/build` 并重新配置。
 
-```sh
-$ make clean
-```
+**通过标准**：应出现 `init`、`alloc`、`sync`、`touch`、`share`、`small_file`、`large_file`、`dir` 共 8 项 `passed`，且没有 `(error)` 和 `(fatal)` 输出。该测试不会输出 Lab 5 的“23 tests passed”汇总；测试运行器可能在失败时仍返回退出码 0，不能仅凭进程退出码判断通过。保存完整输出供审阅。
 
-通过标准：没有显示任何 `(error)` 和 `(fatal)` 输出，则通过评测。
+`inode_test` 为块缓存提供了 Mock，因此它通过并不自动证明 Lab 5 块缓存正确；合并后也应重新运行 `cache_test`。真实磁盘镜像仍由仓库脚本在本地生成，衔接方式见 [Lab 5](./lab5.md)。
 
 ## 6. 评分标准
 
@@ -338,44 +348,27 @@ $ make clean
 - **核心实现**：90%
 - **思考题**：30%（AI率超过80%的答案将不得分）
 
-## 7. 提交
+> [!warning]
+> 原文列出的比例合计为 120%，存在口径冲突；具体计分权重以本学期 eLearning 评分细则为准，本页不作自行归一化。
 
-**提交：将实验报告提交到 eLearning 上，格式为 `学号-lab6.pdf`。**
-
-**注意**：从 `lab1` 开始，用于评分的代码以实验报告提交时为准。如果需要使用新的代码版本，请重新提交实验报告。
-
-**截止时间：**<mark style="color:red;">**12 月 21 日 23:59**</mark>。
-
-> [!danger]
->
-> **逾期提交将扣除部分分数**
->
-> 计算方式为 $\text{score}_{\text{final}} = \text{score} \cdot \left(1 - n \cdot 20\% \right)$，其中 $n$ 为迟交天数，不满一天按一天计算）。
-
-报告中可以包括下面内容
-
-* 代码运行效果展示（测试通过截图）
-* 实现思路和创新点
-* 对后续实验的建议
-* 其他任何你想写的内容
-
-报告中不应有大段代码的复制。如有使用本地环境进行实验的同学，请在elearning上提交代码。使用服务器进行实验的同学，助教会在服务器上检查，不需要另外提交代码。
-
-在服务器上操作的同学，此次实验完成后请提交（或者说创建一个新分支）到 `lab6-submission` 分支，助教会使用你在此分支上提交记录来批作业。如果此分支最后提交时间晚于实验报告提交时间，助教会选择此分支上在实验报告提交时间前的最后一个提交作为批改代码。
-
-**提交操作**：
-
-```shell
-# 提交最后的代码
-git add .
-git commit -m "your final commit message"
-
-# 新建一个分支，用于提交
-git checkout -b lab6-submission
-```
-
-## 8. 参考资料
+## 7. 参考资料
 
 \[1] 聊聊 xv6 中的文件系统：https://www.cnblogs.com/KatyuMarisaBlog/p/14366115.html
 
 \[2] xv6 中文文档：https://th0ar.gitbooks.io/xv6-chinese/content/content/chapter6.html
+
+
+## 8. 实验报告与提交
+
+每位同学必须在 elearning 对应作业中提交 **`学号-lab6.pdf` 实验报告**。具体提交日期和迟交安排以本学期 elearning 作业说明为准。
+
+报告必须包括：
+
+1. **实验环境**：操作系统、CPU 架构、编译器、CMake 和 QEMU 版本，以及实际使用的运行环境（原生 Ubuntu、WSL2 或虚拟机）。
+2. **实验思路**：按本页各任务说明目标、数据结构、关键不变量、同步关系与设计理由，不能仅给出运行截图。
+3. **实现方式**：列出本次修改的文件及对应功能，说明主要流程、边界处理、失败处理与调试过程。可以使用简短伪代码、流程图或关键片段，不要求粘贴大段完整代码。
+4. **实验结果**：给出可复现的构建和测试命令、完整测试日志或其附件、关键结果截图；如有未通过项目，写清实际现象、原因分析与当前完成程度。
+5. **思考题**：逐项回答第 4 节的 5 个问题，结合自己的实现说明接口拆分、`rc` 与 `num_links`、目录增删及查找复杂度。
+6. **本实验重点**：说明直接块/间接块的映射与释放、inode 生命周期和锁/引用计数、目录项更新，以及边界情况；给出 8 项 `inode_test` 与 Lab 5 `cache_test` 回归记录。
+
+报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。

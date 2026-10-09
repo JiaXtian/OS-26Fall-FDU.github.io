@@ -1,38 +1,131 @@
-# Lab 4: VirtIO Driver
+# Lab 4: Condvar & VirtIO Driver
 
-负责助教：[唐傑伟](mailto:22302010060@m.fudan.edu.cn)
+建议用时：**1 周**。先完成条件变量练习，再完成块设备驱动的三个原有任务。
 
 到目前为止，我们已经实现了内核的一些重要组件：内存分配、内核/用户进程、页表等。从这个 Lab 开始，我们将关注操作系统中的持久化问题，最终实现一个功能较为完善的文件系统。
 
-## 1. 服务器操作
+## 1. 本地准备与条件变量
 
-运行以下命令进行代码的拉取与合并
+### 1.1 准备内核代码
+
+本实验在已完成的 `lab3-dev` 基础上，引入课程 `lab4` 框架；需要保留自己的前序实现。 使用 [Lab0 中配置的 Ubuntu 环境](./lab0.md#_1-配置本地实验环境)，在 Linux 终端操作。
+
+首次开始本实验时，先回到原有仓库，确认当前位于已完成的 `lab3-dev` 分支：
 
 ```shell
-# 拉取远端仓库
-git fetch --all
-
-# 提交你的更改
-git add .
-git commit -m "your commit message"
-
-# 切换到新lab的分支
-git checkout lab4
-
-# 新建一个分支，用于开发
-git checkout -b lab4-dev
-
-# 引入你在上个lab的更改
-git merge lab3-dev
+cd ~/os-course/OS-26Fall-FDU
+git status
 ```
 
-如果合并发生冲突，请参考错误信息自行解决。
+若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过这两条命令。执行前确认修改列表中只有需要保留的源码和配置。
+
+```shell
+git add -A
+git commit -m "Save lab3 work"
+```
+
+确认工作区干净后，获取课程框架并创建本次工作分支：
+
+```shell
+git fetch upstream
+git switch -c lab4-dev upstream/lab4
+git merge lab3-dev --no-edit
+```
+
+如果提示合并冲突，运行 `git status` 查看文件；打开这些文件，处理 `<<<<<<<`、`=======`、`>>>>>>>` 标记间的内容，同时保留自己的实现和本次框架的新接口、初始化流程、测试。去掉冲突标记并保存后执行：
+
+```shell
+git add -A
+git commit -m "Resolve lab4 merge conflicts"
+```
+
+没有冲突时无需执行以上两条命令。不要直接用一方文件覆盖所有冲突。
+
+以上获取框架的步骤只执行一次。已经开始本实验时，在工作区干净的前提下用 `git switch lab4-dev` 返回本次分支，继续修改即可，无需重新创建或合并。
+
+### 1.2 条件变量练习（沿用 Lab 4.1）
+
+本部分沿用往年 Lab 4.1 的独立 [Condvar 练习仓库](https://github.com/Boreas618/Condvar)，在本地 Linux 环境中运行普通的 C/Pthreads 程序。该练习与内核代码放在两个并列目录中；内核 `lab4` 分支不包含本练习的 `main.c`，也没有它的 `make check` 目标。
+
+在存放课程项目的目录中执行（与内核仓库并列）：
+
+```shell
+cd ~/os-course
+git clone https://github.com/Boreas618/Condvar.git
+cd Condvar
+```
+
+本实验主要用于帮助大家熟悉一类典型的同步互斥原语——条件变量。后续的实验中，我们将大量使用条件变量及其变体。
+
+本实验中我们将利用条件变量实现一个极简的 Redis（一种用于存储键值对的内存数据库）。`server` 维护键为 `[0, 499]`、值为 email 地址的内存数据库；32 个 `client` 分别发起 2000 次随机查询，通过共享 buffer 交付请求并读取响应。这里的 `client` 和 `server` 是同一个本地程序内的 **Pthreads 线程**，不需要网络连接。源程序的共享 buffer 有 6 个槽位。
+
+一次请求的流程与原练习一致：
+
+1. `client` 在互斥锁保护下寻找 `status == 0` 的空槽，写入 key，将状态设为 `1`（请求等待处理）。
+2. `server` 扫描共享 buffer，处理 `status == 1` 的请求，写入对应 value，将状态设为 `2`（响应完成），通知等待该槽位的 `client`。
+3. `client` 等待响应完成后读取 value，按源码注释中的格式写入自己的 `out00.txt` 至 `out31.txt` 日志，再把槽位归还为 `status == 0`。
+
+条件变量负责唤醒等待者，共享状态负责记录条件是否成立。以父线程等待子线程完成为例：
+
+```c
+#include <pthread.h>
+
+int done = 0;
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t c = PTHREAD_COND_INITIALIZER;
+
+void thread_exit(void) {
+    pthread_mutex_lock(&m);
+    done = 1;
+    pthread_cond_signal(&c);
+    pthread_mutex_unlock(&m);
+}
+
+void thread_join(void) {
+    pthread_mutex_lock(&m);
+    while (done == 0)
+        pthread_cond_wait(&c, &m);
+    pthread_mutex_unlock(&m);
+}
+```
+
+注意以下三点：
+
+* **先检查条件，再决定是否等待。** `signal` 不为未来的等待者保存通知。如果子线程已经设置 `done = 1`，父线程应直接继续执行；不能不检查状态就进入等待。
+* **用同一把锁保护条件。** `pthread_cond_wait` 在调用者持有互斥锁时，原子地释放锁并进入等待，返回前重新取得这把锁。不能把它简单拆成“解锁，再睡眠”两个无保护的步骤，否则通知可能落在二者之间，造成丢失唤醒。
+* **使用 `while` 重新检查。** 被唤醒不代表条件仍然满足：线程重新取得锁之前，其他线程可能改变共享状态，也可能出现虚假唤醒。上例等待条件是 `done == 0`，能够继续执行的条件是 `done == 1`。这是对往年 PDF 中条件方向笔误的澄清。有关等待与通知的进一步说明见 [OSTEP 第 30 章](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-cv.pdf)。
+
+> [!important]
+> **条件变量任务（原 Lab 4.1）**：依照上述介绍与项目中的注释完成 `main.c` 的 todo 处内容。完成后 `make check` 验证程序正确性。
+
+原练习的任务、请求规模和输出格式保持不变。完成 TODO 时，还需处理原骨架中与运行正确性直接相关的三处问题：
+
+* 读取数据库时，确保传给 `getline` 的每个行缓冲区指针初始为 `NULL`，并正确初始化对应容量。不能将未初始化的指针交给 `getline`。
+* `server` 总共处理 `NUM_THREADS * REQUESTS_PER_THREAD` 个请求；处理完后应退出，不应因原来的 `<=` 循环条件再等待一个不存在的请求。
+* 主线程在销毁互斥锁和条件变量前，应等待 `server_thread` 结束；所有线程结束前不可销毁仍可能使用的同步对象。
+
+这些是原有骨架的运行勘误，不增加查询操作或新的内核接口。练习使用本地 C 编译器、Make 和 Python 3；在 `Condvar` 目录中运行：
+
+```shell
+make check
+wc -l out*.txt
+```
+
+未完成的骨架包含 `exit(1)`，此时 `make check` 失败是预期现象。完成后应看到检查脚本输出 `PASS`，并确认 **32 个日志文件各有 2000 行，共 64000 行**。原 `check.py` 只核对已有记录的查询结果，不检查记录总数，因此仅看到 `PASS` 不足以证明请求全部完成。在实验报告中保留检查输出和行数统计。
+
+### 1.3 从条件变量到块设备等待
+
+接下来回到内核仓库的 `lab4-dev` 分支。Pthreads 条件变量是宿主环境提供的接口，不能直接在本实验内核中调用。内核已有 `src/common/sem.h` 中的 `Semaphore`、`wait_sem` 与 `post_sem`，本实验继续沿用它们完成 I/O 等待与通知，不要求新增一套内核条件变量接口。
+
+与条件变量不同，信号量可以保存一次提前到达的通知。仍需明确“哪个请求已经完成”、保护相应共享状态，并处理唤醒后的重新检查。当前 `src/common/buf.h` 已有 `Buf.sem`；`virtio_blk_rw` 已将其初始化为 0，继续使用即可。等待过程中要让中断处理函数能够取得 `disk.lk`，否则等待者与中断处理函数会互相阻塞。请结合 `sem.c` 理解 `wait_sem` 的返回值，不能把任意一次返回都当成设备完成。
 
 ## 2. I/O 框架
 
 硬盘、SD卡等一类设备都是块设备。块设备的特点是数据的读写以块（block）为单位，一次性读取或写入固定大小的数据块。为了实现对块设备的高效管理和操作，操作系统通常会提供一个 I/O 框架，用于抽象和管理这些块设备的访问。
 
 在现代操作系统中，I/O 框架主要分为同步 I/O 和异步 I/O 两种模式。同步 I/O 会阻塞调用的进程，直到 I/O 操作完成。而异步 I/O 则允许进程发起 I/O 操作后立即返回，不会阻塞进程的执行流，从而提高系统的并发度。在本实验中，我们将重点关注同步 I/O 的实现。
+
+这里的 `virtio_blk_rw` 对调用者提供同步接口：调用者等待设备完成后才返回；设备与 CPU 之间则通过异步请求和中断协作，等待期间其他进程可以运行。这也是往年 PDF 使用“异步 I/O”标题而在线文档描述“同步 I/O”的原因，二者描述的是不同层次。
 
 I/O 的基本逻辑如下：
 
@@ -60,9 +153,9 @@ I/O 的基本逻辑如下：
 `virtio-blk-device` 是我们实现块设备驱动的核心。
 
 > [!info]
-> **OS (H) Labs 的历史**
+> **实验平台**
 >
-> 在 2023 秋季及以前版本的实验中，我们面向的平台是树莓派3B，块设备驱动包含了在树莓派上读写 SD 卡的逻辑。然而，[读写 SD 卡的逻辑非常复杂，多达千余行](https://github.com/FDUCSLG/OS-23Fall-FDU/blob/lab5/src/driver/sddef.h)，缺乏可读性和可维护性。因此，从 2024 秋季开始，我们转向 virt 平台（Lab 0 中简要介绍过），极大简化了块设备驱动的逻辑，以期帮助大家更好地理解 I/O 的相关知识。
+> 本课程使用 QEMU 的 `virt` 平台和 VirtIO 块设备，以便聚焦 I/O 请求、等待与中断通知的核心逻辑。
 
 VirtIO 是一种现代化的虚拟设备接口，它广泛用于虚拟机中，以提供高效的 I/O 设备模拟。本实验中，我们将利用 `virtio-blk-device` 作为我们的块设备。这意味着我们的块设备是一个虚拟的块设备，块设备内的数据由宿主机共同提供。
 
@@ -131,7 +224,7 @@ struct virtq {
 int virtio_blk_rw(Buf *b);
 ```
 
-其中，`Buf *b` 是一个缓冲区指针，表示要进行 I/O 操作的数据块缓冲区。`virtio_blk_rw` 将依据 `b` 的各字段（如 `data` 是块对应的数据，`block_no` 是该块在硬盘上的编号等，`flag == B_DIRTY` 表示是一个写请求），配置上述的 `Descriptor Table` 和 `Available Ring`，向设备发起请求。
+其中，`Buf *b` 是一个缓冲区指针，表示要进行 I/O 操作的数据块缓冲区。`virtio_blk_rw` 将依据 `b` 的各字段（如 `data` 是块对应的数据，`block_no` 是该块在硬盘上的编号等，`b->flags & B_DIRTY` 非零表示是一个写请求），配置上述的 `Descriptor Table` 和 `Available Ring`，向设备发起请求。
 
 块设备驱动中处理中断的函数是：
 
@@ -194,44 +287,43 @@ MBR 位于设备的前 512 Byte，有多种格式，不过大同小异，一种�
 > [!important]
 > **任务 3**: 在 `kernel_entry` 中调用 `virtio_blk_rw` 解析 MBR 获得第二分区起始块的 LBA 和分区大小以便后续使用。
 
-## 7. 提交
+### 6.1 代码位置与本地验证
 
-**提交方式**：将实验报告提交到 elearning 上，格式为 `学号-lab4.pdf` 。
+行号可能随合并变化，请按 `LAB 4 TODO 1/2` 标记定位驱动任务，任务 3 的 `kernel_entry` 位于 `src/kernel/core.c`。`virtio_init()` 已在 `src/main.c` 中调用，初始化框架保持沿用。不要在缺少进程上下文的早期初始化代码中执行会休眠的块设备读写。
 
-**注意**：从 `lab1` 开始，用于评分的代码以实验报告提交时为准。如果需要使用新的代码版本，请重新提交实验报告。
+对 MBR 的读取使用整盘的绝对扇区号 **0**；第二分区起始 LBA 和分区扇区数分别来自分区项内偏移 `0x8` 与 `0xC` 的 4 字节小端整数。读取成功后输出解析结果，并核对 MBR 末尾的 `0x55 0xAA`。按当前镜像生成脚本的默认布局，第二分区起始 LBA 为 **133120**，共有 **129024** 个 512 字节扇区；这些值用于核对，不能代替实际解析。分区内的文件系统块号如何转换为整盘扇区号，参见 [Lab 5](./lab5.md)。
 
-**截止时间**：<mark style="color:red;">**11月30日23:59**</mark>。
+> [!warning]
+> **先读取 MBR，再运行 `io_test()`。** 当前 `kernel_entry` 默认先调用 `io_test()`，但 `src/test/io_test.c` 的写性能测试会覆盖整盘第 0 至 2047 扇区，其中包含 MBR，且不恢复。完成任务 3 时，应将 MBR 读取与结果保存放在 `io_test()` 调用之前；I/O 测试仅使用可重新生成的实验镜像。启动下一次验证或继续后续实验前重新生成镜像，否则上次测试已经破坏的 MBR 会使解析失败。
 
-> [!danger]
->
-> **逾期提交将扣除部分分数**
->
-> 计算方式为 $\text{score}_{\text{final}} = \text{score} \cdot \left(1 - n \cdot 20\% \right)$，其中 $n$ 为迟交天数，不满一天按一天计算）。
-
-报告中可以包括下面内容
-
-* 代码运行效果展示
-* 实现思路和创新点
-* 对后续实验的建议
-*   其他任何你想写的内容
-
-    > ~~你甚至可以再放一只可爱猫猫~~
-
-报告中不应有大段代码的复制。如有使用本地环境进行实验的同学，请联系助教提交代码。使用服务器进行实验的同学，助教会在服务器上检查，不需要另外提交代码。
-
-在服务器上操作的同学，此次实验完成后请提交（或者说创建一个新分支）到 `lab4-submission` 分支，助教会使用你在此分支上提交记录来批作业。如果此分支最后提交时间晚于实验报告提交时间，助教会选择此分支上在实验报告提交时间前的最后一个提交作为批改代码。
-
-**提交操作**：
+在内核仓库根目录、退出 QEMU 后，按 [本地环境说明](./lab0.md#_1-配置本地实验环境) 配好构建依赖，并使用固定的 `build` 目录：
 
 ```shell
-# 提交最后的代码
-git add .
-git commit -m "your final commit message"
-
-# 新建一个分支，用于提交
-git checkout -b lab4-submission
+cmake -S . -B build
+rm -f build/boot/sd.img
+cmake --build build --target image
+cmake --build build --target qemu
 ```
 
-## 8. 参考资料
+记录 MBR 解析输出和 `io_test PASS`，说明条件变量练习中的“发布请求—等待响应—唤醒”如何对应到驱动中的描述符、信号量和完成中断。`io_test` 校验数据读写并测量速度；吞吐量受个人环境影响，不以某个固定速度作为正确性标准。
+
+## 7. 参考资料
 
 **\[1]** 简单了解一下Virtio Spec协议 [https://www.openeuler.org/zh/blog/yorifang/virtio-spec-overview.html](https://www.openeuler.org/zh/blog/yorifang/virtio-spec-overview.html)
+
+**\[2]** [OSTEP：Condition Variables](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-cv.pdf)
+
+**\[3]** [原 Condvar 练习源码](https://github.com/Boreas618/Condvar/tree/16667bb83cb0631c8d598501630caa0d78828540)
+
+## 8. 实验报告与提交
+
+每位同学必须在 elearning 对应作业中提交 **`学号-lab4.pdf` 实验报告**。具体提交日期和迟交安排以本学期 elearning 作业说明为准。Condvar 与 VirtIO 两部分合写在同一份报告中。
+
+报告必须包括：
+
+* **实验思路**：共享 buffer 的状态转换、需要保护的条件、锁与条件变量的配合；驱动从提交请求、休眠到中断唤醒的完整过程。
+* **实现方式**：两部分的修改文件与关键逻辑，如何避免丢失唤醒和死锁，如何处理唤醒后的条件检查，以及 MBR 的解析与分区边界。不要求粘贴大段代码，可使用伪代码或流程图说明。
+* **实验结果**：本地环境、运行命令、Condvar 的 `make check` 输出及每个客户端的请求行数、驱动 `io_test PASS`、MBR 解析结果；失败现象、定位过程和已知问题也要如实说明。
+* **问题回答**：为什么条件变量等待需要互斥锁和 `while`；条件变量与信号量如何处理提前到达的通知；为什么不能持有 `disk.lk` 等待中断取得同一把锁；对第 2 节写操作一致性问题的分析。
+
+报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。

@@ -1,22 +1,26 @@
-# Final
+# LabFinal
 
-| 内容              | 分值 | 负责助教                                                                   | 备注 |
-| --------------- | -- | ---------------------------------------------------------------------- | -- |
-| Console         | 10 | [徐厚泽](mailto:houzexu22@m.fudan.edu.cn)                                     |    |
-| Pipe            | 5 | [徐厚泽](mailto:houzexu22@m.fudan.edu.cn)                                     | O  |
-| File Descriptor | 15 | [唐傑伟](mailto:22302010060@m.fudan.edu.cn)                               |    |
-| Shell           | 15 | [唐傑伟](mailto:22302010060@m.fudan.edu.cn)                               |    |
-| Exec            | 20 | [孔令宇](mailto:lykong22@m.fudan.edu.cn)                                    |    |
-| Fork            | 10 | [孔令宇](mailto:lykong22@m.fudan.edu.cn)                                    |    |
-| Memory Management | 15 | [孔令宇](mailto:lykong22@m.fudan.edu.cn)                                 |    |
-| Mmap            | 10 | [孔令宇](mailto:lykong22@m.fudan.edu.cn) | O  |
-| 自选 Bonus        | 20 | TBC                                     | O  |
+**实验周期：2 周。** 在自己的 Linux 实验环境中完成，沿用 `final` 分支和前序实验的累计实现。本页保留 File Descriptor、Fork/Exec、Shell、Console、Pipe、Memory Management、File Mapping 与自选 Bonus 的原有任务和分值。
+
+| 内容 | 分值 | 备注 |
+| --- | --- | --- |
+| Console | 10 | |
+| Pipe | 5 | O |
+| File Descriptor | 15 | |
+| Shell | 15 | |
+| Exec | 20 | |
+| Fork | 10 | |
+| Memory Management | 15 | |
+| Mmap | 10 | O |
+| 自选 Bonus | 20 | O |
 
 > [!info]
 > **说明**
 >
 > * `O`：不实现此部分也可以启动 shell。如果时间来不及，请优先保证你能启动 shell，因为启动 shell 所占分值较大。建议优先完成：File Descriptor + Exec + Fork + Shell + Console + Pipe。
 > * 满分 100 分，超出的部分算 bonus。
+
+开始前先按第 9 节切换框架并合并自己的 `lab6-dev` 实现。建议第一周完成文件接口、内存管理与 ELF 加载，打通 `init.S → /init → sh`；第二周完成交互、Pipe、文件映射等其余任务并回归测试。所有既有任务继续保留，具体完成情况须在报告中逐项说明。
 
 ## 1. File Descriptor
 
@@ -353,6 +357,9 @@ int copyout(struct pgdir* pd, void* va, void *p, usize len)
 > * `kernel/paging.c` 中的 `init_sections`：不需要再单独初始化 heap 段。
 > * `kernel/paging.c` 中的 `pgfault`：增加有关文件的处理逻辑。
 
+> [!info]
+> **与当前框架对应**：本节所称 `pgfault` 在代码中名为 `pgfault_handler`。寄存器说明中的 `tpidr0` 指 AArch64 的线程指针寄存器 `TPIDR_EL0`；保存/恢复它及 `q0` 时，应同步检查 `UserContext` 布局和 `trap.S` 的偏移。`file_read` 的数据方向是文件到缓冲区，`file_write` 是缓冲区到文件；前面函数示意中的两条方向注释写反了，以函数名和 `file.h` 的接口为准。
+
 ## 3. Shell
 
 本部分我们将尝试启动 shell 。
@@ -491,6 +498,9 @@ static void uartintr()
 > **提示**：可以参考 [xv6 pipe 的实现](https://github.com/mit-pdos/xv6-riscv/blob/de247db5e6384b138f270e0a7c745989b5a9c23b/kernel/pipe.c)。
 
 ## 6. Memory Management
+
+> [!info]
+> **阅读顺序**：本节沿用原有内存管理讲解，其中“后续实验”指本页与 ELF、Fork 和文件映射的后续集成阶段。只研究 heap 是分步实现方法；最终运行用户程序时仍须结合第 2 节处理 text、data/bss 和 stack。heap 起点应在已确定的用户地址布局中选择，不能覆盖其他段。当前 `paging.h` 的 `section` 还包含 `fp`、`offset`、`length`，用于文件映射；下方结构体是讲解用的简化示意。`init_sections` 负责初始化段链表，具体程序的 heap 段由建立该程序地址空间的流程创建，避免重复创建。
 
 本次实验为初步了解一些用户态程序的内存管理功能。包括修改程序堆的大小、Lazy Allocation 和 Copy on Write。
 
@@ -734,6 +744,9 @@ WARN_RESULT void *get_zero_page() {
 > [!danger]
 > **特别提醒：**修改页表后需要调用`arch_tlbi_vmalle1is()`以清空 TLB 。忘记清空 TLB 将引发难排查的 BUG 。
 
+> [!info]
+> **接口约定**：当前 `paging.c` 中 `sbrk(i64 size)` 注释要求 `size` 为 `PAGE_SIZE` 的整数倍，返回原 heap 结束地址；系统调用包装已在 `sysproc.c` 提供。本节应遵循现有框架约定，不要把宿主机 libc 的 `brk` 接口直接套入内核。
+
 ## 7. File Mapping
 
 **什么是 `mmap()` ？**
@@ -759,30 +772,103 @@ Linux通过内存映像机制来提供用户程序对内存直接访问的能力
 ## 8. bonus
 同学可以自己就一个感兴趣的系统组建进行功能扩充。
 
-## 9. 构建、测试与提交
+## 9. 构建与测试
+
+### 9.1. 获取本实验框架
+
+本实验在已完成的 `lab6-dev` 基础上，引入课程 `final` 框架；需要保留自己的前序实现。 使用 [Lab0 中配置的 Ubuntu 环境](./lab0.md#_1-配置本地实验环境)，在 Linux 终端操作。
+
+首次开始本实验时，先回到原有仓库，确认当前位于已完成的 `lab6-dev` 分支：
 
 ```shell
-git fetch --all
-git checkout final
-git checkout -b final-dev
-git merge lab6-dev
+cd ~/os-course/OS-26Fall-FDU
+git status
 ```
 
-在拉取了最新的框架后，我们需要：
+若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过这两条命令。执行前确认修改列表中只有需要保留的源码和配置。
 
 ```shell
-git submodule update --init
+git add -A
+git commit -m "Save lab6 work"
 ```
 
-在构建时，我们需要：
+确认工作区干净后，获取课程框架并创建本次工作分支：
 
 ```shell
-cd build
-cmake ..
-make libc -j
-make qemu
+git fetch upstream
+git switch -c final-dev upstream/final
+git merge lab6-dev --no-edit
 ```
 
-当你完成全部任务后，如果一切顺利，将进入 shell，你可以自己运行里面的程序。我们也编写了一个 `usertests` 程序供测试。
+如果提示合并冲突，运行 `git status` 查看文件；打开这些文件，处理 `<<<<<<<`、`=======`、`>>>>>>>` 标记间的内容，同时保留自己的实现和本次框架的新接口、初始化流程、测试。去掉冲突标记并保存后执行：
 
-提交日期为 <mark style="color:red;">**2026 年 1 月 26 日**</mark>，如有特殊情况请联系助教。
+```shell
+git add -A
+git commit -m "Resolve final merge conflicts"
+```
+
+没有冲突时无需执行以上两条命令。不要直接用一方文件覆盖所有冲突。
+
+以上获取框架的步骤只执行一次。已经开始本实验时，在工作区干净的前提下用 `git switch final-dev` 返回本次分支，继续修改即可，无需重新创建或合并。
+
+
+在仓库根目录获取框架使用的 musl 子模块：
+
+```shell
+git submodule update --init --recursive
+```
+
+该命令获取框架记录的子模块版本，不要加 `--remote`。完成后继续下节构建。
+
+### 9.2. 本地构建与镜像
+
+使用 [Linux 实验环境](./lab0.md#_1-配置本地实验环境)中的 GNU 工具链、Python 3、QEMU，以及 `dosfstools`、`mtools`、`fdisk` 提供的镜像工具。在仓库根目录执行：
+
+```shell
+cmake -S . -B build
+cmake --build build --target libc
+cmake --build build --target qemu
+```
+
+`libc` 目标会先配置并构建 musl，再生成 `build/musl-gcc.specs`，必须在首次构建用户程序前完成。仓库镜像脚本写死了若干 `../build` 路径，因此使用根目录的 `build`，不要另取构建目录名。
+
+`qemu` 依赖 `image`，会编译仓库中的用户程序并调用 `boot/generate-image.py` 在本地生成 `build/boot/sd.img`。脚本使用主机编译器构建 `src/user/mkfs/main.c`，将 `init`、`sh`、`cat`、`mkdir`、`echo`、`ls`、`usertests`、`mmaptest` 等程序写入文件系统，无需下载预制镜像。更改用户程序后重新运行构建，确保测试的镜像包含最新程序。镜像重建会重置其中的数据，需保留的测试材料请先备份。
+
+**文件系统集成检查**：沿用 Lab 4 的 MBR 解析结果，在 `init_filesystem()` 使用超级块之前，完成第二分区起始 LBA 的获取与超级块读取。当前框架 `block_device.c` 的读写封装尚未加入分区偏移，`sblock_data` 也尚未从磁盘装载；请按 [Lab 5 的说明](./lab5.md)衔接已有驱动与文件系统接口。实际镜像的超级块在分区相对块 1；Mock 的布局由传入的 `SuperBlock` 决定，不能把真实磁盘偏移硬编码进缓存或 inode 实现。
+
+合并时检查初始化顺序：当前 `core.c` 调用 `init_filesystem()` 的位置在保留的 Lab 4 MBR 任务区之前，需要确保前置分区信息与超级块已经准备好；之后再启动第一个用户进程。保留 `console_init()` 的初始化，以及 UART 中断到 `console_intr()` 的调用。
+
+### 9.3. 验证顺序
+
+1. 先构建并检查日志，确认所有用户程序已写入新镜像，ELF 加载和上下文切换能够完成 `init.S → /init → sh`，看到 `$` 提示符。
+2. 在实验系统的 shell 中依次运行下列命令，验证参数传递、读写、目录操作与用户程序执行。命令中的目录和文件名首次使用时应不存在；重复运行请先恢复干净镜像或换名。
+
+   ```sh
+   echo hello
+   ls
+   mkdir demo
+   echo hello > sample
+   cat sample
+   usertests
+   ```
+
+   `cat sample` 应输出写入的内容，`ls` 应能列出文件；`usertests` 应完成 open、small file、big files、many creates/unlink 等检查并回到 shell。该程序没有“全部测试通过”的统一汇总，请保留各阶段实际输出；发现 `failed`、`error`、内核 panic 或卡死都应排查。
+3. 验证 Console 的普通字符回显、退格、`Ctrl+U`、`Ctrl+D`，并给出 Pipe 读写、关闭端点后的 EOF/唤醒等结果。正文 `ls -l | grep "txt"` 是 Linux 管道概念示例；实验镜像没有 `grep`，且原任务只要求 `cat` 读取单个文件，不应把该示例当作必需的 shell 测试命令。
+4. 按自己的实现验证 heap 增减、缺页处理、共享零页和 Fork 后的地址空间隔离；完成 File Mapping 时，在 shell 运行 `mmaptest` 并保存其输出，包括 `mmap_test: ALL OK`、Fork 子进程/父进程检查结果。
+5. 再次检查 Lab 5、Lab 6 的接口和前序功能是否因集成而退化。Final 的文件系统 Mock 构建会额外包含 `file.c`、`pipe.c` 等与内核集成的源文件，不应直接把 Final 分支的 `src/fs/test` 当作完整 Final 评测器；Lab 5/6 的独立 Mock 结果与本节 QEMU 集成结果分别记录。
+
+`usertests` 主要验证文件操作，不能代替 Pipe、Console、内存管理和 Mmap 的检查；仅出现 shell 提示符也不能证明全部任务完成。所有未通过或未实现的项目在报告中如实列出。
+
+## 10. 实验报告与提交
+
+每位同学必须在 elearning 对应作业中提交 **`学号-final.pdf` 实验报告**。具体提交日期和迟交安排以本学期 elearning 作业说明为准。
+
+报告必须包括：
+
+1. **实验环境**：操作系统、CPU 架构、编译器、CMake 和 QEMU 版本，以及实际使用的运行环境（原生 Ubuntu、WSL2 或虚拟机）。
+2. **完成情况**：按页首评分表逐项说明 File Descriptor、Fork、Exec、Shell、Console、Pipe、Memory Management、Mmap 和自选 Bonus 的完成程度；不要只写“成功启动 shell”。
+3. **实验思路与实现方式**：说明文件表和引用计数、路径解析、ELF 装载、用户栈和参数、进程资源复制/释放、Console 缓冲和唤醒、Pipe 同步、内存与映射管理；列出本次修改的文件及关键流程。可用伪代码、图示或必要片段，不要求大段代码，但必须讲清设计理由与边界处理。
+4. **实验结果**：提供构建/运行命令、shell 启动与交互截图、`usertests` 完整日志、各模块自测及 `mmaptest` 的实际结果。指出测试覆盖范围、未通过项目和已知限制，保证结果对应报告中描述的实现。
+5. **思考与调试**：回答正文所有思考题，包括 Fork 中文件描述符“复制”的含义、Exec 的资源保留与释放、`argv/envp` 的地址空间归属；记录至少能说明自己实现过程的关键问题、原因与解决方式。自选 Bonus 单独说明功能、设计和验证，不混同基础任务。
+
+报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。

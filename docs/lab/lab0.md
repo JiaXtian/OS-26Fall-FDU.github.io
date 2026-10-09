@@ -149,8 +149,6 @@ cmake --build build --target qemu
    code .
    ```
 
-   `.` 表示当前目录。首次连接会自动下载所需组件，请保持网络可用并等待窗口打开。左下角应显示 **WSL: Ubuntu** 或对应的 Ubuntu 发行版名称，左侧资源管理器应能看到 `src`、`boot` 和 `CMakeLists.txt`。
-
 若 `code .` 提示找不到命令，先重开 Ubuntu 终端，并检查安装时是否添加了 PATH。也可以在 Windows 的 VS Code 中按 `Ctrl+Shift+P`，执行 **WSL: Connect to WSL using Distro**，选择安装的 Ubuntu，再通过“文件 → 打开文件夹”打开 `/home/你的Linux用户名/os-course/OS-26Fall-FDU`。完整说明见 [Microsoft 的 VS Code + WSL 教程](https://learn.microsoft.com/zh-cn/windows/wsl/tutorials/wsl-vscode)和 [VS Code 官方 WSL 文档](https://code.visualstudio.com/docs/remote/wsl)。
 
 

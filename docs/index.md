@@ -6,13 +6,14 @@ next: false
 
 复旦大学 **2026 年秋季学期《操作系统（H）》** 课程配套实验。
 
+实验配套代码仓库：[OS-26Fall-FDU](https://github.com/rfieldsy/OS-26Fall-FDU)
+
 **当前已发布： [Lab0 · Booting](./lab/lab0.md)。** 
 
 ## 开始实验
 
 打开 [Lab0 · Booting](./lab/lab0.md)，完成环境配置，获取代码、完成实验任务并提交报告。
 
-所有实验在本地完成。每次实验都必须提交报告，每次实验报告提交时间以本学期 eLearning lab公告为准。
 
 ## 实验安排
 

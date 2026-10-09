@@ -8,6 +8,10 @@ next: false
 
 实验配套代码仓库：[OS-26Fall-FDU](https://github.com/rfieldsy/OS-26Fall-FDU)
 
+## 📰 News
+
+- **2026 年 10 月 8 日** [Lab0 · Booting](./lab/lab0.md) 发布。
+
 ## 整体实验目标
 
 在 AArch64 多核平台上逐步构建能够运行 shell 的教学操作系统，理解内存、进程、设备与文件系统如何协作，掌握资源管理、隔离、并发与持久化的基本机制，形成系统设计与调试能力。

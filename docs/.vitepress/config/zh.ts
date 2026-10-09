@@ -43,7 +43,8 @@ export const zh = defineConfig({
 function nav(): DefaultTheme.NavItem[] {
   return [
     { text: '首页', link: '/' },
-    { text: 'Lab0', link: '/lab/lab0' }
+    { text: 'Lab0', link: '/lab/lab0' },
+    { text: 'Lab1', link: '/lab/lab1' }
   ]
 }
 
@@ -52,6 +53,7 @@ function sidebarGuide(): DefaultTheme.Sidebar {
     { text: '首页', link: '/' },
     { text: '已发布实验', items: [
       { text: 'Lab 0: Booting', link: '/lab/lab0' },
+      { text: 'Lab 1: Memory Allocator', link: '/lab/lab1' },
     ] },
   ]
 }

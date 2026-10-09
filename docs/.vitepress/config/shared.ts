@@ -17,8 +17,8 @@ export const shared = defineConfig({
   title: 'OS-26Fall-FDU',
   base: '/OS-26Fall-FDU.github.io/',
   lastUpdated: true,
-  // Only Lab0 is released. Later Markdown remains available in the local delivery.
-  srcExclude: process.env.OS_DOCS_PREVIEW_ALL === '1' ? [] : ['lab/lab1.md', 'lab/lab2.md', 'lab/lab3.md', 'lab/lab4.md', 'lab/lab5.md', 'lab/lab6.md', 'lab/lab-final.md'],
+  // Lab0 and Lab1 are available. Keep later labs out of the published site.
+  srcExclude: process.env.OS_DOCS_PREVIEW_ALL === '1' ? [] : ['lab/lab2.md', 'lab/lab3.md', 'lab/lab4.md', 'lab/lab5.md', 'lab/lab6.md', 'lab/lab-final.md'],
   cleanUrls: true,
   metaChunk: true,
   vite: {

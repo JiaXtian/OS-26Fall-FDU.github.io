@@ -1,51 +1,87 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="806" viewBox="0 0 1040 806" role="img" aria-labelledby="title desc">
-<title id="title">教学操作系统整体架构</title><desc id="desc">用户程序通过系统调用进入内核。内核包含进程、内存、文件、通信与终端模块，同步机制贯穿其中；设备驱动连接 QEMU 模拟设备，中断进入内核处理。示意主要逻辑组件，不是完整调用图。</desc>
-<rect width="1040" height="806" fill="white"/>
-<style>text {font-family: "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; fill:#172b3d;} .muted {fill:#536575;} .accent {fill:#315d7d;}</style>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="#536575" stroke-width="1.5"/></marker></defs>
-<text x="36" y="43" font-size="27" font-weight="600" text-anchor="start" class="">教学操作系统整体架构</text>
-<text x="1004" y="43" font-size="18" font-weight="400" text-anchor="end" class="muted">AArch64 / QEMU</text>
-<rect x="36" y="68" width="968" height="100" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="56" y="97" font-size="19" font-weight="600" text-anchor="start" class="accent">用户态  EL0</text>
-<text x="520" y="113" font-size="25" font-weight="600" text-anchor="middle" class="">shell 与用户程序</text>
-<text x="520" y="143" font-size="19" font-weight="400" text-anchor="middle" class="muted">命令交互 · 程序执行</text>
-<path d="M 420 168 V 230" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="404" y="202" font-size="18" font-weight="400" text-anchor="end" class="muted">系统调用 / 同步异常</text>
-<path d="M 620 230 V 168" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="637" y="202" font-size="18" font-weight="400" text-anchor="start" class="muted">返回用户态</text>
-<rect x="36" y="230" width="900" height="411" rx="3" fill="white" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="56" y="260" font-size="19" font-weight="600" text-anchor="start" class="accent">内核态  EL1</text>
-<rect x="60" y="277" width="852" height="48" rx="3" fill="#eef3f7" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="486" y="308" font-size="22" font-weight="600" text-anchor="middle" class="">系统调用 · 异常与中断处理</text>
-<rect x="60" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="159.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">进程管理</text>
-<text x="159.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">创建与退出</text>
-<text x="159.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">调度与上下文切换</text>
-<rect x="278" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="377.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">内存管理</text>
-<text x="377.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">物理内存分配</text>
-<text x="377.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">页表与地址空间</text>
-<rect x="496" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="595.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">文件系统</text>
-<text x="595.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">Inode 与目录</text>
-<text x="595.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">块缓存与日志</text>
-<rect x="714" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="813.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">通信与终端</text>
-<text x="813.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">文件描述符</text>
-<text x="813.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">Pipe 与 Console</text>
-<rect x="60" y="498" width="852" height="45" rx="3" fill="#eef3f7" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="486" y="527" font-size="20" font-weight="400" text-anchor="middle" class="">同步与等待：保护共享状态，协调并发执行</text>
-<rect x="60" y="565" width="852" height="52" rx="3" fill="white" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="486" y="598" font-size="21" font-weight="600" text-anchor="middle" class="">设备驱动：VirtIO 块设备 · UART 串口</text>
-<path d="M 486 617 V 683" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="505" y="666" font-size="18" font-weight="400" text-anchor="start" class="muted">设备访问</text>
-<path d="M 169 641 V 683" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="152" y="666" font-size="17" font-weight="400" text-anchor="middle" class="muted">处理器 / 内存操作</text>
-<rect x="36" y="686" width="968" height="81" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
-<text x="56" y="714" font-size="19" font-weight="600" text-anchor="start" class="accent">QEMU 模拟硬件</text>
-<text x="520" y="747" font-size="22" font-weight="400" text-anchor="middle" class="">CPU / MMU     ·     内存     ·     块设备     ·     UART / 定时器</text>
-<path d="M 972 686 V 301 H 913" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="984" y="421" font-size="18" font-weight="400" text-anchor="start" class="muted">中</text>
-<text x="984" y="446" font-size="18" font-weight="400" text-anchor="start" class="muted">断</text>
-<text x="36" y="795" font-size="17" font-weight="400" text-anchor="start" class="muted">逻辑组件及主要交互；内核模块之间存在协作，未逐一绘出调用关系。</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="868" viewBox="0 0 1180 868" role="img" aria-labelledby="title desc">
+<title id="title">教学操作系统架构与主要访问路径</title>
+<desc id="desc">EL0 用户程序通过系统调用或同步异常进入 EL1 内核。内核入口分派到进程、地址空间与文件接口。文件描述符指向 Inode 或 Pipe，设备 Inode 连接 Console；普通文件经块缓存与日志、VirtIO 访问磁盘。Console 经 UART 驱动访问终端设备。同步原语横跨内核。设备和定时器的中断进入统一异常入口。实线表示主要调用或访问路径，虚线表示中断；不表示完整调用图，省略返回路径与模块间的其他协作。</desc>
+<rect width="1180" height="868" fill="#fff"/>
+<style>text{font-family:"Noto Sans CJK SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif;fill:#1d2935;font-size:23px} .section{font-size:19px;fill:#586978;letter-spacing:1px} .note{font-size:18px;fill:#586978} .accent{fill:#315975}</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#566676" stroke-width="1.5"/></marker><marker id="i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#81624f" stroke-width="1.5"/></marker></defs>
+<text x="52" y="34" text-anchor="start" class="" font-weight="600">教学操作系统</text>
+<text x="1094" y="34" text-anchor="end" class="section">AArch64 / QEMU</text>
+<rect x="52" y="60" width="1042" height="99" rx="2" fill="#f5f8fa" stroke="#c0cbd3" stroke-width="1.3"/>
+<text x="74" y="88" text-anchor="start" class="section">EL0</text>
+<rect x="398" y="81" width="354" height="56" rx="2" fill="#eaf1f6" stroke="#94a2af" stroke-width="1.3"/>
+<text x="575.0" y="117.0" text-anchor="middle" class="" font-weight="600">用户程序（shell 等）</text>
+<rect x="52" y="207" width="1042" height="469" rx="2" fill="#fbfcfd" stroke="#a3b0ba" stroke-width="1.3"/>
+<text x="74" y="235" text-anchor="start" class="section">EL1</text>
+<rect x="132" y="224" width="874" height="54" rx="2" fill="#eaf1f6" stroke="#94a2af" stroke-width="1.3"/>
+<text x="569.0" y="259.0" text-anchor="middle" class="" font-weight="600">系统调用 / 异常入口</text>
+<path d="M 575 137 V 223" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="590" y="188" text-anchor="start" class="note">SVC / 同步异常</text>
+<path d="M 575 278 V 299 H 180 V 319" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 575 299 H 407 V 319" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 575 299 H 770 V 319" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="86" y="320" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="180.0" y="357.0" text-anchor="middle" class="" font-weight="600">进程</text>
+<rect x="313" y="320" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="407.0" y="357.0" text-anchor="middle" class="" font-weight="600">地址空间</text>
+<rect x="546" y="320" width="448" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="770.0" y="357.0" text-anchor="middle" class="" font-weight="600">文件接口：FD → File</text>
+<rect x="86" y="463" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="180.0" y="500.0" text-anchor="middle" class="">调度</text>
+<rect x="86" y="573" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="180.0" y="610.0" text-anchor="middle" class="">上下文切换</text>
+<path d="M 180 378 V 462" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 180 521 V 572" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="313" y="414" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="407.0" y="451.0" text-anchor="middle" class="">页表管理</text>
+<rect x="313" y="573" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="407.0" y="610.0" text-anchor="middle" class="">物理页分配</text>
+<path d="M 407 378 V 413" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 407 472 V 572" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="546" y="414" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="640.0" y="451.0" text-anchor="middle" class="">Inode</text>
+<rect x="806" y="414" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="900.0" y="451.0" text-anchor="middle" class="">Pipe</text>
+<path d="M 770 378 V 396 H 640 V 413" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 770 396 H 900 V 413" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="546" y="496" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="640.0" y="533.0" text-anchor="middle" class="">块缓存 / 日志</text>
+<rect x="806" y="496" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="900.0" y="533.0" text-anchor="middle" class="">Console</text>
+<path d="M 640 472 V 495" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 734 443 H 768 V 525 H 805" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="777" y="485" text-anchor="start" class="note">设备</text>
+<rect x="546" y="573" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="640.0" y="610.0" text-anchor="middle" class="">VirtIO</text>
+<rect x="806" y="573" width="188" height="58" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="900.0" y="610.0" text-anchor="middle" class="">UART 驱动</text>
+<path d="M 640 554 V 572" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 900 554 V 572" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="1030" y="320" width="42" height="311" rx="2" fill="#f0f3f5" stroke="#bdc7cf" stroke-width="1.3" stroke-dasharray="5 5"/>
+<text x="1051" y="438" text-anchor="middle" class="section">同</text>
+<text x="1051" y="465" text-anchor="middle" class="section">步</text>
+<text x="1051" y="492" text-anchor="middle" class="section">原</text>
+<text x="1051" y="519" text-anchor="middle" class="section">语</text>
+<rect x="52" y="716" width="1042" height="109" rx="2" fill="#f5f8fa" stroke="#c0cbd3" stroke-width="1.3"/>
+<text x="74" y="742" text-anchor="start" class="section">QEMU</text>
+<rect x="86" y="760" width="188" height="46" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="180.0" y="791.0" text-anchor="middle" class="">CPU / MMU</text>
+<rect x="313" y="760" width="188" height="46" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="407.0" y="791.0" text-anchor="middle" class="">RAM</text>
+<rect x="546" y="760" width="188" height="46" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="640.0" y="791.0" text-anchor="middle" class="">块设备</text>
+<rect x="806" y="760" width="188" height="46" rx="2" fill="white" stroke="#94a2af" stroke-width="1.3"/>
+<text x="900.0" y="791.0" text-anchor="middle" class="">UART</text>
+<path d="M 313 443 H 292 V 694 H 234 V 759" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="304" y="658" text-anchor="start" class="note">配置 MMU</text>
+<path d="M 180 631 V 759" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 407 631 V 759" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 640 631 V 759" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 900 631 V 759" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M 1094 781 H 1127 V 251 H 1007" fill="none" stroke="#81624f" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#i)"/>
+<text x="1147" y="535" text-anchor="middle" class="note">IRQ</text>
+<path d="M 52 850 H 98" fill="none" stroke="#566676" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="111" y="856" text-anchor="start" class="note">调用 / 访问</text>
+<path d="M 283 850 H 329" fill="none" stroke="#81624f" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#i)"/>
+<text x="342" y="856" text-anchor="start" class="note">中断</text>
+<text x="1094" y="856" text-anchor="end" class="note">主要路径示意</text>
 </svg>

@@ -38,5 +38,3 @@ next: false
 | LabFinal | 实现 Pipe、Console、ELF 加载等功能，最终启动 shell | 2 周 | 第 12–13 周 | 待发布 |
 
 #### 课程实验计划按上述顺序推进，后续实验会依赖前序实现。请务必保存本地代码与测试记录！
-
-![各实验与操作系统组件的对应关系](/assets/lab-architecture-map.svg)

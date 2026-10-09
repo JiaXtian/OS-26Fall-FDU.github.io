@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="806" viewBox="0 0 1040 806" role="img" aria-labelledby="title desc">
+<title id="title">教学操作系统整体架构</title><desc id="desc">用户程序通过系统调用进入内核。内核包含进程、内存、文件、通信与终端模块，同步机制贯穿其中；设备驱动连接 QEMU 模拟设备，中断进入内核处理。示意主要逻辑组件，不是完整调用图。</desc>
+<rect width="1040" height="806" fill="white"/>
+<style>text {font-family: "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; fill:#172b3d;} .muted {fill:#536575;} .accent {fill:#315d7d;}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="#536575" stroke-width="1.5"/></marker></defs>
+<text x="36" y="43" font-size="27" font-weight="600" text-anchor="start" class="">教学操作系统整体架构</text>
+<text x="1004" y="43" font-size="18" font-weight="400" text-anchor="end" class="muted">AArch64 / QEMU</text>
+<rect x="36" y="68" width="968" height="100" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="56" y="97" font-size="19" font-weight="600" text-anchor="start" class="accent">用户态  EL0</text>
+<text x="520" y="113" font-size="25" font-weight="600" text-anchor="middle" class="">shell 与用户程序</text>
+<text x="520" y="143" font-size="19" font-weight="400" text-anchor="middle" class="muted">命令交互 · 程序执行</text>
+<path d="M 420 168 V 230" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="404" y="202" font-size="18" font-weight="400" text-anchor="end" class="muted">系统调用 / 同步异常</text>
+<path d="M 620 230 V 168" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="637" y="202" font-size="18" font-weight="400" text-anchor="start" class="muted">返回用户态</text>
+<rect x="36" y="230" width="900" height="411" rx="3" fill="white" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="56" y="260" font-size="19" font-weight="600" text-anchor="start" class="accent">内核态  EL1</text>
+<rect x="60" y="277" width="852" height="48" rx="3" fill="#eef3f7" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="486" y="308" font-size="22" font-weight="600" text-anchor="middle" class="">系统调用 · 异常与中断处理</text>
+<rect x="60" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="159.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">进程管理</text>
+<text x="159.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">创建与退出</text>
+<text x="159.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">调度与上下文切换</text>
+<rect x="278" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="377.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">内存管理</text>
+<text x="377.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">物理内存分配</text>
+<text x="377.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">页表与地址空间</text>
+<rect x="496" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="595.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">文件系统</text>
+<text x="595.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">Inode 与目录</text>
+<text x="595.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">块缓存与日志</text>
+<rect x="714" y="345" width="198" height="134" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="813.0" y="377" font-size="23" font-weight="600" text-anchor="middle" class="">通信与终端</text>
+<text x="813.0" y="418" font-size="19" font-weight="400" text-anchor="middle" class="">文件描述符</text>
+<text x="813.0" y="450" font-size="19" font-weight="400" text-anchor="middle" class="">Pipe 与 Console</text>
+<rect x="60" y="498" width="852" height="45" rx="3" fill="#eef3f7" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="486" y="527" font-size="20" font-weight="400" text-anchor="middle" class="">同步与等待：保护共享状态，协调并发执行</text>
+<rect x="60" y="565" width="852" height="52" rx="3" fill="white" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="486" y="598" font-size="21" font-weight="600" text-anchor="middle" class="">设备驱动：VirtIO 块设备 · UART 串口</text>
+<path d="M 486 617 V 683" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="505" y="666" font-size="18" font-weight="400" text-anchor="start" class="muted">设备访问</text>
+<path d="M 169 641 V 683" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="152" y="666" font-size="17" font-weight="400" text-anchor="middle" class="muted">处理器 / 内存操作</text>
+<rect x="36" y="686" width="968" height="81" rx="3" fill="#f7f9fb" stroke="#8b9aa6" stroke-width="1.3"/>
+<text x="56" y="714" font-size="19" font-weight="600" text-anchor="start" class="accent">QEMU 模拟硬件</text>
+<text x="520" y="747" font-size="22" font-weight="400" text-anchor="middle" class="">CPU / MMU     ·     内存     ·     块设备     ·     UART / 定时器</text>
+<path d="M 972 686 V 301 H 913" fill="none" stroke="#536575" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="984" y="421" font-size="18" font-weight="400" text-anchor="start" class="muted">中</text>
+<text x="984" y="446" font-size="18" font-weight="400" text-anchor="start" class="muted">断</text>
+<text x="36" y="795" font-size="17" font-weight="400" text-anchor="start" class="muted">逻辑组件及主要交互；内核模块之间存在协作，未逐一绘出调用关系。</text>
+</svg>

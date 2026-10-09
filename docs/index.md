@@ -8,13 +8,6 @@ next: false
 
 实验配套代码仓库：[OS-26Fall-FDU](https://github.com/rfieldsy/OS-26Fall-FDU)
 
-**当前已发布： [Lab0 · Booting](./lab/lab0.md)。** 
-
-## 开始实验
-
-打开 [Lab0 · Booting](./lab/lab0.md)，完成环境配置，获取代码、完成实验任务并提交报告。
-
-
 ## 实验安排
 
 下表为 13 周的相对进度安排，具体教学周由课程公告确定。

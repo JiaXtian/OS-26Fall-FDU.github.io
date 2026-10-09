@@ -19,7 +19,6 @@
 | Lab6 · Inode-based FS | 基于 Inode 的文件系统 | 2 周 |
 | LabFinal | Pipe、Console、ELF 加载与 shell | 2 周 |
 
-所有实验在本地 Linux 环境中完成，Windows 和 macOS 的环境配置方法见 Lab0。每次实验均需提交实验报告，提交要求及大模型工具使用记录要求见对应实验页面，截止时间以课程通知和 eLearning 作业说明为准。
 
 ## 文档维护
 
@@ -30,4 +29,4 @@ npm ci
 npm run docs:dev
 ```
 
-使用 `npm run docs:build` 构建静态站点。推送到 `main` 后，GitHub Actions 会自动部署到 GitHub Pages；实验页面的发布范围由站点配置控制。
+使用 `npm run docs:build` 构建静态站点。推送到 `main` 后，GitHub Actions 会自动部署到 GitHub Pages；

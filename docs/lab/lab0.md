@@ -138,10 +138,10 @@ cmake --build build --target qemu
 
 ### Windows + WSL：连接 Ubuntu 并打开项目
 
-使用 WSL2 的同学可以在 Windows 中使用 VS Code 界面，直接编辑 Ubuntu 中的实验代码，并在 Ubuntu 中构建和运行。按以下步骤操作即可：
+使用 WSL2 的同学可以在 Windows 中使用 VS Code 编辑代码。按以下步骤操作即可：
 
-1. 在 **Windows 中**安装 [Visual Studio Code](https://code.visualstudio.com/download)，安装时勾选 **Add to PATH（添加到 PATH）**。无需在 WSL 的 Ubuntu 中另装一份 VS Code 桌面程序。
-2. 打开 VS Code，按 `Ctrl+Shift+X` 进入扩展页面，搜索并安装 Microsoft 发布的 **WSL** 扩展（见下表）。
+1. 在 **Windows 中**自行安装 [Visual Studio Code](https://code.visualstudio.com/download).无需在 WSL 的 Ubuntu 中另装一份 VS Code 桌面程序。
+2. 搜索并安装 Microsoft 发布的 **WSL** 扩展（见下表）。
 3. 打开之前使用的 **Ubuntu 终端**，进入已经下载的代码目录，再打开当前文件夹：
 
    ```shell
@@ -150,11 +150,9 @@ cmake --build build --target qemu
    ```
 
    `.` 表示当前目录。首次连接会自动下载所需组件，请保持网络可用并等待窗口打开。左下角应显示 **WSL: Ubuntu** 或对应的 Ubuntu 发行版名称，左侧资源管理器应能看到 `src`、`boot` 和 `CMakeLists.txt`。
-4. 在资源管理器中打开 `src/main.c`，按照后文任务编辑并按 `Ctrl+S` 保存。选择菜单“终端 → 新建终端”，此窗口中的终端运行在 WSL Ubuntu 中；确认位于项目根目录后，执行上一节的构建命令。之后每次修改代码，保存并重新运行 `cmake --build build --target qemu` 即可；若 QEMU 仍在运行，先按 `Ctrl+A`，松开后按 `x` 退出。
 
 若 `code .` 提示找不到命令，先重开 Ubuntu 终端，并检查安装时是否添加了 PATH。也可以在 Windows 的 VS Code 中按 `Ctrl+Shift+P`，执行 **WSL: Connect to WSL using Distro**，选择安装的 Ubuntu，再通过“文件 → 打开文件夹”打开 `/home/你的Linux用户名/os-course/OS-26Fall-FDU`。完整说明见 [Microsoft 的 VS Code + WSL 教程](https://learn.microsoft.com/zh-cn/windows/wsl/tutorials/wsl-vscode)和 [VS Code 官方 WSL 文档](https://code.visualstudio.com/docs/remote/wsl)。
 
-代码继续保存在 Ubuntu 的家目录中，不必复制到 Windows，也不需要重新克隆仓库。构建命令在连接后的 Ubuntu 终端执行。
 
 ### 推荐扩展与 Git 使用
 
@@ -164,7 +162,7 @@ cmake --build build --target qemu
 | [GitLens](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens)（GitKraken，`eamodio.gitlens`，可选） | 辅助查看某行代码的修改来源、提交历史和版本差异。进入 WSL 项目窗口后安装，若提示“Install in WSL: Ubuntu”，按提示安装到该环境。Lab0 不依赖其额外功能。 |
 | [C/C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools)（Microsoft，`ms-vscode.cpptools`，可选） | 提供 C/C++ 代码补全和跳转等编辑辅助。在 WSL 项目窗口中按提示安装到 Ubuntu 环境；编译仍使用第 1.4 节安装的工具链。 |
 
-VS Code 已[内置 Git 支持](https://code.visualstudio.com/docs/sourcecontrol/overview)，无需额外安装名为“Git”的扩展。按 `Ctrl+Shift+G` 打开“源代码管理”，点击修改过的文件即可查看差异；状态栏可查看当前分支是否为 `lab0-dev`。这些功能使用 Ubuntu 中已安装的 Git，终端中的 `git status` 仍然可用。Lab0 按第 2 节的本地分支操作即可，无需为使用编辑器而发布分支或同步到 GitHub。
+VS Code 已[内置 Git 支持](https://code.visualstudio.com/docs/sourcecontrol/overview)。按 `Ctrl+Shift+G` 打开“源代码管理”，点击修改过的文件即可查看差异；状态栏可查看当前分支是否为 `lab0-dev`。这些功能使用 Ubuntu 中已安装的 Git，终端中的 `git status` 仍然可用。
 
 使用原生 Ubuntu 或 VMware Ubuntu 桌面的同学，可直接在该 Ubuntu 中安装 VS Code 并打开同一项目目录，无需安装 WSL 扩展。
 

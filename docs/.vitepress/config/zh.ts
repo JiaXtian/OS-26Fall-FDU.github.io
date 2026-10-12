@@ -44,7 +44,9 @@ function nav(): DefaultTheme.NavItem[] {
   return [
     { text: '首页', link: '/' },
     { text: 'Lab0', link: '/lab/lab0' },
-    { text: 'Lab1', link: '/lab/lab1' }
+    { text: 'Lab1', link: '/lab/lab1' },
+    { text: 'Lab2', link: '/lab/lab2' },
+    { text: 'Lab3', link: '/lab/lab3' }
   ]
 }
 
@@ -54,6 +56,8 @@ function sidebarGuide(): DefaultTheme.Sidebar {
     { text: '已发布实验', items: [
       { text: 'Lab 0: Booting', link: '/lab/lab0' },
       { text: 'Lab 1: Memory Allocator', link: '/lab/lab1' },
+      { text: 'Lab 2: Process (Kernel Part)', link: '/lab/lab2' },
+      { text: 'Lab 3: Process (User Part)', link: '/lab/lab3' },
     ] },
   ]
 }

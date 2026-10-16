@@ -4,7 +4,6 @@
 
 - **在线实验文档**：[课程主页](https://jiaxtian.github.io/OS-26Fall-FDU.github.io/)
 - **实验代码仓库**：[rfieldsy/OS-26Fall-FDU](https://github.com/rfieldsy/OS-26Fall-FDU)
-- **开始实验**：[Lab0 · Booting](https://jiaxtian.github.io/OS-26Fall-FDU.github.io/lab/lab0)
 
 ## 实验安排
 

@@ -15,14 +15,14 @@ cd ~/os-course/OS-26Fall-FDU
 git status
 ```
 
-第一次在此仓库保存 Git 记录前，设置自己的姓名和邮箱（替换引号中的内容；仅用于本地记录，无需登录 GitHub）：
+第一次在此仓库保存 Git 记录前，设置自己的姓名和邮箱：
 
 ```shell
 git config user.name "你的姓名"
 git config user.email "你的邮箱"
 ```
 
-若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过这两条命令。执行前确认修改列表中只有需要保留的源码和配置。
+若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过以下两条命令。执行前确认修改列表中只有需要保留的源码和配置。
 
 ```shell
 git add -A
@@ -49,7 +49,7 @@ cmake -S . -B build -G "Unix Makefiles"
 
 完成任务后使用 `cmake --build build --target qemu` 构建和运行。框架包含待实现内容，完成前出现编译或测试失败时，请结合 TODO 和本页任务检查。
 
-继续使用 Lab0 中的编辑方式，在项目根目录执行 `code .` 打开整个仓库。本次主要修改 `src/kernel/mem.c`；下文的 `kernel/mem.c`、`common/list.h` 等路径均相对于 `src/`。
+本次主要修改 `src/kernel/mem.c`；下文的 `kernel/mem.c`、`common/list.h` 等路径均相对于 `src/`。
 
 ## 2. 物理内存管理
 
@@ -271,6 +271,8 @@ for (int i = 0 ; i < N; i++) {
 | 1500 - 1600 |   80  |
 | 1600 - 1700 |   70  |
 |    > 1700   |   60  |
+
+> ～说不定⻚数⼩于1200的会有神奇的效果～
 
 ### 5.1 本地构建与结果记录
 

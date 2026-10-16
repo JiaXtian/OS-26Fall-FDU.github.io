@@ -14,13 +14,6 @@ cd ~/os-course/OS-26Fall-FDU
 git status
 ```
 
-第一次在此仓库保存 Git 记录前，设置自己的姓名和邮箱：
-
-```shell
-git config user.name "你的姓名"
-git config user.email "你的邮箱"
-```
-
 若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过以下两条命令。执行前确认修改列表中只有需要保留的源码和配置。
 
 ```shell

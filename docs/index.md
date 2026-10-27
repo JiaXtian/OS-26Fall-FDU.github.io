@@ -12,7 +12,7 @@ next: false
 
 - **2026 年 10 月 8 日** [Lab0 · Booting](./lab/lab0.md) 发布。
 - **2026 年 10 月 16 日** [Lab1 · Allocator](./lab/lab1.md) 发布。
-- **2026 年 10 月 27 日** [Lab2 · Process (Kernel Part)](./lab/lab2.md) 发布。
+- **2026 年 10 月 29 日** [Lab2 · Process (Kernel Part)](./lab/lab2.md) 发布。
 
 ## 整体实验目标
 

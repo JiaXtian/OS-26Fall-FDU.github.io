@@ -1,7 +1,6 @@
 # Lab 2: Process (Kernel Part)
 
-#### 暂未发布，后续可能有小改动，看到可别直接顺手做了（
-**实验周期：2 周。暂定 DDL：2026 年 11 月 13 日 23:59。**
+**实验周期：2 周。暂定 DDL：2026 年 11 月 13 日 23:59（北京时间）。**
 
 本实验中，我们将引入进程的概念，并实现如下的进程**状态转换**逻辑。
 
@@ -54,6 +53,8 @@ git switch -c lab2-dev upstream/lab2
 git merge lab1-dev --no-edit
 ```
 
+注意：应从 `upstream/lab2` 创建本次分支。仅在 `lab1-dev` 上执行 `git switch -c lab2-dev` 只会新建分支名，不会获取 Lab2 框架。
+
 如果提示合并冲突，运行 `git status` 查看文件；打开这些文件，处理 `<<<<<<<`、`=======`、`>>>>>>>` 标记间的内容，同时保留自己的实现和本次框架的新接口、初始化流程、测试。去掉冲突标记并保存后执行：
 
 ```shell
@@ -76,7 +77,7 @@ cmake -S . -B build -G "Unix Makefiles"
 
 完成任务后使用 `cmake --build build --target qemu` 构建和运行。框架包含待实现内容，完成前出现编译或测试失败时，请结合 TODO 和本页任务检查。
 
-**合并核对**：保留自己在 `src/kernel/mem.c` 中完成的分配器；同时保留 Lab2 的 `src/main.c` 初始化顺序（`kinit` → `init_sched` → `init_kproc`）和 `src/kernel/core.c` 中的 `proc_test()` 调用。不要把新版启动流程覆盖为 Lab1 的分配器测试入口。下文文件路径除特别注明外均相对于 `src/`。
+**合并核对**：Lab2 的 `src/kernel/core.c` 已提供 `_panic`，可以使用框架的 `ASSERT`。若曾在 Lab1 自行补写 `_panic`，合并时应保留 Lab2 的实现，避免重复定义。保留自己在 `src/kernel/mem.c` 中完成的分配器；同时保留 Lab2 的 `src/main.c` 初始化顺序（`kinit` → `init_sched` → `init_kproc`）和 `src/kernel/core.c` 中的 `proc_test()` 调用。不要把新版启动流程覆盖为 Lab1 的分配器测试入口。下文文件路径除特别注明外均相对于 `src/`。
 
 ## 2. 进程 Process
 

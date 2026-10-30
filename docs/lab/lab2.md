@@ -27,7 +27,7 @@ C -- exit() --> E
 
 ## 1. 获取本次实验框架
 
-本实验在已完成的 `lab1-dev` 基础上，引入[课程代码仓库](https://github.com/rfieldsy/OS-26Fall-FDU)的 `lab2` 框架，保留自己的前序实现。使用 [Lab0 中配置的 Ubuntu 环境](./lab0.md#_1-配置本地实验环境)，在 Linux 终端操作。
+本实验在已完成的 `lab1-dev` 基础上，引入[课程代码仓库](https://github.com/rfieldsy/OS-26Fall-FDU)的 `lab2` 框架，保留自己的前序实现。
 
 首次开始本实验时，先回到原有仓库，确认当前位于已完成的 `lab1-dev` 分支：
 
@@ -36,7 +36,7 @@ cd ~/os-course/OS-26Fall-FDU
 git status
 ```
 
-`git status` 的第一行应显示上述分支名。以下命令沿用 Lab0 设置的 `upstream` 课程远程仓库；Git 姓名和邮箱沿用 Lab1 的本地设置，无需重新配置。
+`git status` 的第一行应显示上述分支名。
 
 若 `git status` 显示有源码修改，先保存到当前分支；如果提示工作区干净（working tree clean），跳过这两条命令。执行前确认修改列表中只有需要保留的源码和配置。
 
@@ -64,7 +64,6 @@ git commit -m "Resolve lab2 merge conflicts"
 
 没有冲突时无需执行以上两条命令。不要直接用一方文件覆盖所有冲突。
 
-合并完成后，运行 `git status` 确认没有未解决的冲突，在仓库根目录执行 `code .` 打开代码。
 
 以上获取框架的步骤只执行一次。已经开始本实验时，在工作区干净的前提下用 `git switch lab2-dev` 返回本次分支，继续修改即可，无需重新创建或合并。
 
@@ -262,7 +261,7 @@ typedef struct Proc {
 
 ### 7.1 本地构建与结果记录
 
-完成实现后，在 Ubuntu 的代码仓库根目录执行：
+完成实现后，仓库根目录执行：
 
 ```shell
 cmake --build build --target qemu

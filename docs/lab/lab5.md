@@ -55,6 +55,8 @@ git commit -m "Resolve lab5 merge conflicts"
 * 为实现 unalertable wait，我们参考了 Linux 的 `uninterruptable wait` 的实现，为 `procstate` 添加了一项 `DEEPSLEEPING`，`DEEPSLEEPING` 与 `SLEEPING` 基本相同，区别仅在于 alert 操作对 `DEEPSLEEPING` 无效。**你需要在调度器相关代码中将 `DEEPSLEEPING` 纳入考虑。** 除 activate 操作外，一般可以将 `DEEPSLEEPING` 视为 `SLEEPING` 处理。
 * 将原先的 `activate_proc` 重命名为 `_activate_proc`，添加了参数 `onalert`，以指出是正常唤醒还是被动打断，并用宏定义 `activate_proc` 为 `onalert = false` 的 `_activate_proc`，`alert_proc` 为 `onalert=true` 的`_activate_proc`。**你需要修改 `_activate_proc` 的代码，并在 `kill` 中换用 `alert_proc` 唤醒进程**
 
+**合并核对**：保留 Lab5 的 `sem.h`/`sem.c`、`procstate` 和 `_activate_proc` 接口，并适配自己的调度器。Lab3 中“被 kill 且目标状态不是 `ZOMBIE` 就直接返回”的规则需要允许进入 `DEEPSLEEPING`，否则不可打断的等待无法真正睡眠；普通可打断的等待仍应及时返回。`onalert=true` 是打断请求，`onalert=false` 是正常通知，不能按调用者是否“主动”来理解。
+
 ## 3. 文件系统
 
 ### 3.1. 从磁盘到块设备抽象
@@ -67,7 +69,7 @@ Linux 系统中，我们将所有外设抽象成**设备**（Device），设备�
 2. 块设备（Block Device）：以块（Block）为单位进行 I/O 的设备，比如硬盘；
 3. 网络设备（Network Device）：以数据包（Packet）为单位进行 I/O 的设备，比如网卡。
 
-在 Linux 中，设备进一步被抽象成了特殊的设备文件（File），因此我们可以通过文件系统的接口来访问设备。设备文件的路径常常为`/dev/<device_name>`，比如 `/dev/sda` 就是第一个 SATA 硬盘。
+在 Linux 中，字符设备和块设备通常通过特殊的设备文件（File）提供访问接口；网络设备主要通过网络协议栈和 socket 接口访问。设备文件的路径常常为`/dev/<device_name>`，比如 `/dev/sda` 就是第一个 SATA 硬盘。
 
 块设备的本质是**实现了以下两个接口的任何对象**：
 
@@ -99,7 +101,9 @@ void block_sync(Block *block);
 void block_release(Block *block);
 ```
 
-从另一个角度来看，也可以把前两者看成一组：它们的作用其实和块设备的两个函数类似：一个负责读，一个负责写。最后一个函数则是释放块缓存。
+从另一个角度来看，也可以把前两者看成一组：它们的作用其实和块设备的两个函数类似：一个负责读，一个负责写。最后一个函数则是释放对缓存块的占用，而非立即释放缓存块对象。
+
+这些是概念接口；实际实现以 `src/fs/cache.h` 的 `BlockCache` 为准。带有事务上下文的 `sync` 记录本次修改并保留脏块，不应立即覆盖原位置；`release` 不要求写盘，`end_op` 则必须等到本次操作的修改持久化完成。
 
 ### 3.3. 从内存布局到磁盘布局
 
@@ -117,13 +121,13 @@ void block_release(Block *block);
 | 0              | 1                                              | 保留块      |
 | 1              | 1                                              | 超级块      |
 | `log_start`    | `num_log_blocks`                               | 日志区域     |
-| `inode_start`  | `num_inodes * sizeof(InodeEntry) / BLOCK_SIZE` | inode 区域 |
+| `inode_start`  | `inode 区域占用块数（见下方说明）` | inode 区域 |
 | `bitmap_start` | `num_bitmap_blocks`                            | 位图区域     |
 | `data_start`   | `num_data_blocks`                              | 数据区域     |
 
 内存擅长小块随机读写，而硬盘只能大块整读整写，因此位图的效率反而比其他内存中使用过的动态分配器（例如 SLAB）要高。
 
-表中的 `num_bitmap_blocks` 和 `data_start` 是布局说明用的名称，当前 `SuperBlock` 中没有这两个字段；应依据超级块已有字段及 `mkfs` 的布局确定范围，不要直接按示意表访问不存在的成员。
+inode 区域按整块预留，不能直接用未取整的字节数除法作为长度；实际边界以 `mkfs` 生成的 `inode_start` 和 `bitmap_start` 为准。表中的 `num_bitmap_blocks` 和 `data_start` 是布局说明用的名称，当前 `SuperBlock` 中没有这两个字段；应依据超级块已有字段及 `mkfs` 的布局确定范围，不要直接按示意表访问不存在的成员。
 
 硬盘和内存的分配器的接口是类似的：
 
@@ -147,9 +151,12 @@ void block_free(int block_no);
 
 一个典型的写入过程如下：（Checkpoint）
 
-1. 将要写入的数据先写入磁盘的日志区域
-2. 将日志区域的数据写入磁盘的数据区域
-3. 将日志区域的数据删除
+1. 将要写入的完整块内容写入磁盘日志区域。
+2. 写入日志头，记录块数及各块的原位置，作为这批日志已提交的标志。必须先完成所有日志数据写入，再写入这个标志。
+3. 将已提交的日志数据写回各自的原位置。
+4. 清空磁盘日志头中的有效块数，表示本批日志处理完毕，无需逐块清零日志数据。
+
+这是对原文“写日志—写回—删除日志”流程的展开：当前框架的 `LogHeader` 承担提交记录，缺少第二步会使恢复代码误将未写完整的日志应用到文件系统。
 
 对于多个事务的提交，时间序列图如下：
 
@@ -157,11 +164,11 @@ void block_free(int block_no);
 
 一个典型的系统启动中的初始化过程如下：（`recover_from_log`）
 
-1. 检查日志区域是否有数据
-2. 如果有，说明上次系统非正常终止，将日志区域的数据写入磁盘的数据区域
-3. 将日志区域的数据删除
+1. 读取日志头，检查是否存在已提交、尚未清除的日志。
+2. 若存在，将日志中记录的完整块重放到各自的原位置；未提交的日志数据不应重放。
+3. 完成全部重放后，清空磁盘日志头中的有效块数。
 
-这个过程中任意时刻发生崩溃都是安全的，顶多是丢数据，但不会导致一致性问题。
+在本实验块设备模型下，单块写入按原子写处理，且已完成的写入可供崩溃后恢复使用。遵守上述顺序，提交前崩溃可以放弃这一批修改，提交后崩溃则可重放全部修改；恢复途中再次崩溃也可重新重放。这里保证的是恢复后的原子性与一致性，并不保证尚未完成提交的修改不会丢失。真实设备的缓存刷新和写入顺序控制超出本实验范围。
 
 > [!important]
 > **思考**
@@ -195,20 +202,20 @@ void end_op(OpContext *ctx);
 > [!info]
 > **注意**
 >
-> 本实验为简单起见，按照日志协议时块缓存总表现为写直达，不使用写回，以确保数据真正落盘。
+> 本实验要求提交阶段按日志协议完成实际设备写入，不能把提交仅留在内存缓存中。这不意味着每次 `sync(ctx, block)` 都立即写盘；`cache.h` 要求 `end_op` 等待本次操作所属的这批修改完成持久化，即使另一个操作负责执行 checkpoint。调用 `end_op` 前应释放已获取的块锁，避免阻塞提交过程。
 
 ### 3.6 对外接口的使用示例
 
-以下示例沿用接口说明；当前 `cache.h` 声明的是全局对象 `extern BlockCache bcache`，在实际代码中应写 `bcache.acquire(...)` 等点号调用；只有持有 `BlockCache *` 时才使用箭头。
+当前 `cache.h` 声明的是全局对象 `extern BlockCache bcache`，以下示例使用点号调用其函数指针。
 
 读块：
 
 ```c
-Block *block = bcache->acquire(block_no);
+Block *block = bcache.acquire(block_no);
 
 // ... Read block->data here ...
 
-bcache->release(block);
+bcache.release(block);
 ```
 
 写块：
@@ -218,17 +225,17 @@ bcache->release(block);
 OpContext ctx;
 
 // Begin an atomic operation
-bcache->begin_op(&ctx);
-Block *block = bcache->acquire(block_no);
+bcache.begin_op(&ctx);
+Block *block = bcache.acquire(block_no);
 
 // ... Modify block->data here ...
 
 // Notify the block cache that "I have modified block->data"
-bcache->sync(&ctx, block);
-bcache->release(block);
+bcache.sync(&ctx, block);
+bcache.release(block);
 
 // End the atomic operation
-bcache->end_op(&ctx);
+bcache.end_op(&ctx);
 ```
 
 ## 4. 任务
@@ -236,9 +243,9 @@ bcache->end_op(&ctx);
 > [!important]
 > **任务 1**
 >
-> 由于为 `_wait_sem` 等一系列函数添加了编译检查，未处理返回值将编译失败；对于这一系列函数，确保起返回值被使用。
+> 由于为 `_wait_sem` 等一系列函数添加了编译检查，未处理返回值将编译失败；对于这一系列函数，确保其返回值被使用。
 >
-> 特别的，对于`_wait_sem`函数，若起返回为`false`后，不应当继续`wait`，应当立即返回（返回一个布尔值 `false` 表示当前进程未被唤醒，而是因为其他信号（例如进程被`kill`）而中断了等待状态，具体可见`sem.c`的`_wait_sem`函数实现）
+> 特别的，对于`_wait_sem`函数，若其返回为`false`后，不应当继续`wait`，应当立即返回（返回一个布尔值 `false` 表示当前进程未被唤醒，而是因为其他信号（例如进程被`kill`）而中断了等待状态，具体可见`sem.c`的`_wait_sem`函数实现）
 
 > [!important]
 > **任务 2**
@@ -305,7 +312,7 @@ Part 2:
 static void cache_begin_op(OpContext *ctx)
 
 /*
- * 若ctx为NULL，直接使用device_writex写入块
+ * 若ctx为NULL，直接使用device_write写入块
  * （在调用函数前，调用者必须保证已经通过acquire持有该块的锁）
  * 标记该块为脏块，在log_header中记录该块（如果该块已经被标记为脏块呢？）
  */
@@ -343,6 +350,8 @@ static void cache_free(OpContext *ctx, usize block_no)
 > **思考**
 >
 > 若存在一个事务在begin\_op阶段需要等待checkpoint完成的信号才能继续，但若其还未运行至`wait_sem`时，checkpoint完成的信号已经发送，这样的并发问题是否存在？如何解决？
+
+**接口核对**：`cache.c` 已封装 `device_read` 和 `device_write`。使用传入 `init_bcache` 的 `SuperBlock` 与 `BlockDevice`，不要绕过它们直接访问 VirtIO 或全局磁盘；测试会提供自己的设备和布局。`EVICTION_THRESHOLD` 是软上限，不能淘汰仍被占用或 pinned 的块。日志区域还需容纳日志头，不能把 `num_log_blocks` 全部当作日志数据槽。
 
 ## 5. 测试方式
 
@@ -451,18 +460,18 @@ cmake --build src/fs/test/build --target cache_test
 >
 > 上述测试只用于检测`cache.c`中内容是否正确运行， 任务 1-3 的内容是否正确完成至少需要确保在 `build/`运行`make qemu`时能正确跑通（可以打开`core.c`中`proc_test()`和`user_proc_test`尝试运行）
 
-### 5.1. QEMU 回归与磁盘接口衔接
+### 5.1. 内核回归检查
 
-Mock 只覆盖文件系统接口；任务 1—3 还需使用自己的累计实现，在根目录的 `build` 中分别运行 Lab 2、Lab 3 回归，确认等待、正常唤醒、被 `kill` 打断和 `DEEPSLEEPING` 的处理。`onalert=true` 对应 `alert_proc` 的打断请求，`onalert=false` 对应 `activate_proc` 的正常唤醒；它们不是是否主动调用函数的区别。
+Mock 测试通过宿主环境的锁、信号量等替代内核实现，不能验证任务 1—3。按原实验要求，还需在自己的累计实现上运行 QEMU 回归：在 `src/kernel/core.c` 中分别启用 Lab2 的 `proc_test()`，以及 Lab3 的 `vm_test()`、`user_proc_test()`，保留测试逻辑与断言（仅适配原有上下文 TODO），构建并记录各测试结果。前序测试不专门覆盖 `DEEPSLEEPING`，因此不能仅凭其 PASS 宣称这一状态已得到完整验证；报告中还应结合状态转换与唤醒路径解释实现。`onalert=true` 对应 `alert_proc` 的打断请求，`onalert=false` 对应 `activate_proc` 的正常唤醒；它们不是是否主动调用函数的区别。
 
 ```sh
-cmake -S . -B build
+cmake -S . -B build -G "Unix Makefiles"
 cmake --build build --target qemu
 ```
 
 `boot/generate-image.py` 会使用仓库内的 `src/user/mkfs/main.c` 在本地生成镜像，依赖 Python 3、主机 C 编译器、`mkfs.vfat`、`mcopy`、`sfdisk` 和 `dd`，无需下载预制镜像。脚本使用固定的 `../build` 相对路径，请保持根目录构建目录名为 `build`。
 
-后续将 Mock 实现接入真实块设备时，沿用 Lab 4 解析的第二分区起始 LBA，在块设备封装层统一换算 `整盘 LBA = 分区起始 LBA + 文件系统相对块号`，并在文件系统初始化之前读取相对块 1 的超级块。当前 `block_device.c` 仅保留接口骨架，`sblock_data` 尚未装载磁盘数据；仅调用 `init_block_device()` 不会自动完成这一步。不要在 `cache.c` 中硬编码分区偏移或绕过传入的 `BlockDevice`，否则会破坏 Mock 测试的抽象边界。这一说明用于衔接既有 Lab 4 和文件系统接口，不新增块缓存功能。
+本实验的 `cache_test` 使用 Mock 设备，不要求额外完成真实文件系统的挂载。`block_device.c` 中的 `sblock_data` 尚未装载磁盘数据，仅调用 `init_block_device()` 不会自动得到有效超级块；不要为了通过 Mock 测试在 `cache.c` 中硬编码分区偏移或读取全局超级块。
 
 ## 6. 评分标准
 
@@ -522,6 +531,7 @@ cmake --build build --target qemu
 3. **实现方式**：列出本次修改的文件及对应功能，说明主要流程、边界处理、失败处理与调试过程。可以使用简短伪代码、流程图或关键片段，不要求粘贴大段完整代码。
 4. **实验结果**：给出可复现的构建和测试命令、完整测试日志或其附件、关键结果截图；如有未通过项目，写清实际现象、原因分析与当前完成程度。
 5. **本实验分析**：回答本页全部思考题，重点讨论事务开始、日志记录、提交及写回等阶段崩溃时的一致性，以及并发事务、日志吸收和丢失唤醒的处理；说明为了支持文件系统，对调度器、`kill` 与信号量调用作了哪些修改。
-6. **验证范围**：分别列出 23 项 `cache_test` 的结果与 QEMU 中 Lab 2/Lab 3 回归结果，不用 Mock 通过代替调度验证。
+6. **验证范围**：分别列出 23 项 `cache_test` 的结果与 QEMU 中 Lab2/Lab3 回归结果，不用 Mock 通过代替调度验证；说明 `DEEPSLEEPING` 的进入、正常唤醒和拒绝打断的路径，并区分代码分析与实际测试证据。
+7. **大模型工具使用情况**：如使用大模型，注明工具及模型名称/版本、使用环节，简要记录关键提示词、模型输出摘要、提示词迭代、输出筛选、调试记录和修改依据；区分模型建议与本人最终实现。无需提交完整聊天记录或大段生成代码；未使用时注明“本次实验未使用大模型工具”，未发生或未验证的环节如实说明。
 
 报告可以使用流程图、伪代码或少量关键代码，不需要粘贴大段源码，但必须清楚说明实验思路、实现方式和实验结果。未完成内容、未通过测试及已知问题应如实记录。

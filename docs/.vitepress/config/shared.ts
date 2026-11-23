@@ -17,8 +17,8 @@ export const shared = defineConfig({
   title: 'OS-26Fall-FDU',
   base: '/OS-26Fall-FDU.github.io/',
   lastUpdated: true,
-  // Lab0 through Lab3 are available. Keep later labs out of the published site.
-  srcExclude: process.env.OS_DOCS_PREVIEW_ALL === '1' ? [] : ['lab/lab4.md', 'lab/lab5.md', 'lab/lab6.md', 'lab/lab-final.md'],
+  // Lab0 through Lab5 are available. Keep later labs out of the published site.
+  srcExclude: process.env.OS_DOCS_PREVIEW_ALL === '1' ? [] : ['lab/lab6.md', 'lab/lab-final.md'],
   cleanUrls: true,
   metaChunk: true,
   vite: {

@@ -246,7 +246,7 @@ cmake --build build --target qemu
 
 ## 8. 实验报告与提交
 
-每位同学必须在 elearning 对应作业中提交 **`学号-lab4.pdf` 实验报告**。具体提交日期和迟交安排以本学期 elearning 作业说明为准。
+每位同学必须在 elearning 对应作业中提交 **`学号-lab4.pdf` 实验报告**。
 
 报告必须包括：
 
